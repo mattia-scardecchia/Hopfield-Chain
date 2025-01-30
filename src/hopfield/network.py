@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
-from typing import Optional, Callable, Dict, List
+from typing import Optional, Callable
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
+from tqdm import tqdm
+from scipy.spatial.distance import cosine
 
 from .initializer import CouplingInitializer
 
@@ -94,16 +95,9 @@ class HopfieldNetwork:
         """
         return self.num_unsatisfied_neurons() == 0
 
-    def visualize_state(self):
-        n = int(np.ceil(np.sqrt(self.N)))
-        padded_state = np.pad(
-            self.state, (0, n * n - self.N), mode="constant", constant_values=0
-        )
-        padded_state = padded_state.reshape((n, n))
-        cmap = mcolors.ListedColormap(["black", "gray", "white"])
-        bounds = [-1.5, -0.5, 0.5, 1.5]
-        norm = mcolors.BoundaryNorm(bounds, cmap.N)
-        fig = plt.figure(figsize=(6, 6))
-        plt.imshow(padded_state, cmap=cmap, norm=norm)
-        plt.title("Network State")
-        return fig
+    def state_similarity(self, other_state: np.ndarray) -> float:
+        """
+        Returns the similarity between the current state and another state,
+        defined as 1 minus the Hamming distance, normalized by N.
+        """
+        return np.sum(self.state == other_state) / self.N

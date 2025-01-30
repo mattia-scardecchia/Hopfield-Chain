@@ -12,7 +12,7 @@ class HopfieldPlotter:
     allowing easy extension if you add new metrics.
     """
 
-    def __init__(self, data: Dict[str, List | int]) -> None:
+    def __init__(self, data: Dict) -> None:
         """
         Initializes the plotter with the data to be plotted.
 
@@ -28,6 +28,7 @@ class HopfieldPlotter:
         self.data = data
         self.energies = self.data.get("energies", [])
         self.magnetizations = self.data.get("magnetizations", [])
+        self.similarities = self.data.get("similarities", [])
         self.log_interval = self.data.get("log_interval", 1)
         self.x_values = np.arange(len(self.energies)) * self.log_interval
 
@@ -52,6 +53,7 @@ class HopfieldPlotter:
         """
         ax.plot(self.x_values, y_values, color=color)
         ax.set_ylabel(ylabel)
+        ax.set_xlabel("Step")
         ax.set_title(title)
         ax.grid(True, linestyle="--", alpha=0.6)
 
@@ -92,23 +94,32 @@ class HopfieldPlotter:
         Creates a figure with two subplots: one for energy and one for magnetization.
         Reuses the _plot_metric method on each axis.
         """
-        fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(6, 6), sharex=True)
+        fig, axes = plt.subplots(
+            nrows=2, ncols=2, figsize=(6, 6), sharex=True, squeeze=False
+        )
 
         self._plot_metric(
-            ax=axes[0],
+            ax=axes[0, 0],
             y_values=self.energies,
             color="blue",
             ylabel="Energy",
             title="Energy vs. Step",
         )
         self._plot_metric(
-            ax=axes[1],
+            ax=axes[1, 0],
             y_values=self.magnetizations,
             color="red",
             ylabel="Magnetization",
             title="Magnetization vs. Step",
         )
+        self._plot_metric(
+            ax=axes[0, 1],
+            y_values=self.similarities,
+            color="green",
+            ylabel="Similarity",
+            title="Similarity vs. Step",
+        )
 
-        axes[1].set_xlabel("Step")
+        axes[1, 1].axis("off")
         plt.tight_layout()
         return fig
