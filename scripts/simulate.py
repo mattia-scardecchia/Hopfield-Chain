@@ -1,5 +1,7 @@
+from tkinter import simpledialog
 from matplotlib import pyplot as plt
 import numpy as np
+from tqdm import tqdm
 
 from src.hopfield.dynamics import AsynchronousDeterministicUpdate
 from src.hopfield.initializer import SymmetricCoupling, random_sampler
@@ -11,7 +13,7 @@ from src.hopfield.stopping import SimpleStoppingCondition
 from src.hopfield.utils import plot_couplings_histogram, plot_energy_pairs_histogram
 
 
-def analyze_stability(
+def analyze_local_stability_random(
     network, dynamics, num_flips=10, num_steps=1000, num_trials=30, seed=42
 ):
     seeds = np.random.default_rng(seed).integers(0, 2**32, num_trials)
@@ -34,6 +36,31 @@ def analyze_stability(
     return np.array(similarities)
 
 
+def analyze_local_stability_full(network, dynamics, num_steps=1000):
+    """
+    For each neuron, flip it from initial state. Run the dynamics for num_steps.
+    Compute the fraction of neurons that have returned to their initial state.
+    """
+    initial_state = network.state.copy()
+    similarities, final_states, is_fixed_point = [], [], []
+    print("Running local stability analysis...")
+    for i in tqdm(range(network.N)):
+        network.set_state(initial_state.copy())
+        network.state[i] *= -1
+
+        # we pass the unperturbed state as reference state
+        logger = Logger(reference_state=initial_state, log_interval=1)
+        stopping_condition = SimpleStoppingCondition(
+            max_iterations=num_steps, stable_steps_needed=None
+        )
+        simulation = HopfieldSimulation(network, dynamics, stopping_condition, logger)
+        simulation.run()
+        similarities.append(logger.similarity_history)
+        final_states.append(network.state)
+        is_fixed_point.append(network.is_fixed_point())
+    return np.array(similarities), np.array(final_states), np.array(is_fixed_point)
+
+
 def simulate(N=1000, max_iterations=100000, log_interval=100, seed=42):
     """
     Simulate relaxation of a symmetric Hopfield network.
@@ -46,6 +73,7 @@ def simulate(N=1000, max_iterations=100000, log_interval=100, seed=42):
         max_iterations=max_iterations, stable_steps_needed=None
     )
 
+    print("============ Running simulation ============")
     network.initialize_state(random_sampler)
     logger = Logger(log_interval=log_interval, reference_state=network.state)
     simulation = HopfieldSimulation(network, dynamics, stopping_condition, logger)
@@ -56,6 +84,7 @@ def simulate(N=1000, max_iterations=100000, log_interval=100, seed=42):
     print(
         f"Fraction of Unsat neurons after {len(logger.energy_history) * logger.log_interval} steps: {network.num_unsatisfied_neurons() / network.N:.4f}"
     )
+    print("============ Simulation finished ============\n")
     plotter = HopfieldPlotter(logger.get_data())
     fig = plotter.plot_all()
 
@@ -63,22 +92,44 @@ def simulate(N=1000, max_iterations=100000, log_interval=100, seed=42):
 
 
 if __name__ == "__main__":
-    network, logger, plotter, fig1 = simulate(N=500)
+    network, logger, plotter, fig1 = simulate(N=100)
     fig2 = plot_couplings_histogram(network.J)
     fig3 = plot_energy_pairs_histogram(network.all_pairs_energy())
     # plt.close(fig1), plt.close(fig2), plt.close(fig3)
 
-    similarities = analyze_stability(
-        network, AsynchronousDeterministicUpdate(), 1, 10000
+    # similarities = analyze_stability(
+    #     network, AsynchronousDeterministicUpdate(), 1, 10000
+    # )
+    similarities, final_states, is_fixed_point = analyze_local_stability_full(
+        network, AsynchronousDeterministicUpdate(), 1000
+    )
+    has_returned = similarities[:, -1] == 1
+    has_converged_elsewhere = np.logical_and(
+        np.logical_not(has_returned), is_fixed_point
+    )
+    print(f"Fraction of trials that returned back: {has_returned.mean():.4f}")
+    print(
+        f"Fraction of trials that converged elsewhere: {has_converged_elsewhere.mean():.4f}"
     )
     print(
-        f"Fraction of trials that returned back: {(similarities[:, -1] == 1).mean():.4f}"
+        f"Fraction of trials that did not converge: {np.logical_not(is_fixed_point).mean():.4f}"
     )
-    fig, ax = plt.subplots()
+
+    fig, axes = plt.subplots(
+        nrows=1, ncols=2, figsize=(12, 6), sharey=True, squeeze=False
+    )
     for i, sim in enumerate(similarities):
+        if similarities[i, -1] == 1:
+            ax = axes[0, 0]
+        else:
+            ax = axes[0, 1]
         ax.plot(sim, label=f"Trial {i + 1}")
-    ax.set_xlabel("Step")
-    ax.set_ylabel("similarity")
-    ax.set_title("Similarity to initial state over time")
-    ax.legend()
+    for ax in axes.flat:
+        ax.set_xlabel("Step")
+        ax.set_ylabel("similarity")
+    axes[0, 0].set_title("returning trials")
+    axes[0, 1].set_title("non-returning trials")
+    fig.suptitle(
+        "Local stability analysis: similarity to initial (perturbed) state over time"
+    )
     plt.show()
