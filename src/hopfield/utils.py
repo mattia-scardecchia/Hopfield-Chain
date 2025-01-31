@@ -35,3 +35,25 @@ def plot_energy_pairs_histogram(energies: np.ndarray) -> plt.Figure:
     ax.set_title("Histogram of Energy Pairs")
     ax.grid(True, linestyle="--", alpha=0.6)
     return fig
+
+
+def plot_similarity_evolution_stability_analysis(similarities: np.ndarray):
+    fig, axes = plt.subplots(
+        nrows=1, ncols=2, figsize=(12, 4), sharey=True, squeeze=False
+    )
+    for i, sim in enumerate(similarities):
+        if similarities[i, -1] == 1:
+            ax = axes[0, 0]
+        else:
+            ax = axes[0, 1]
+        ax.plot(sim, label=f"Trial {i + 1}")
+    for ax in axes.flat:
+        ax.set_xlabel("Step")
+        ax.set_ylabel("similarity")
+    axes[0, 0].set_title("returning trials")
+    axes[0, 1].set_title("non-returning trials")
+    fig.suptitle(
+        "Local stability analysis: similarity to initial (perturbed) state over time"
+    )
+    # fig.tight_layout()
+    return fig
