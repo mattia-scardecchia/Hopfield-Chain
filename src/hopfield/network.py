@@ -1,9 +1,5 @@
 from typing import Optional, Callable
-from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
 import numpy as np
-from tqdm import tqdm
-from scipy.spatial.distance import cosine
 
 from .initializer import CouplingInitializer
 
