@@ -127,9 +127,9 @@ def main(cfg: DictConfig):
 
     if not network.is_fixed_point():
         logging.warning(
-            f"Simulation did not converge to a fixed point. {network.num_unsatisfied_neurons()} neurons are unsatisfied. Skipping stability analysis."
+            f"Simulation did not converge to a fixed point. {network.num_unsatisfied_neurons()} neurons are unsatisfied."
         )
-    else:
+    elif not cfg.stability.skip:
         similarities, final_states, is_fixed_point = analyze_local_stability_full(
             network, AsynchronousDeterministicUpdate(rng=None), cfg.stability.num_steps
         )

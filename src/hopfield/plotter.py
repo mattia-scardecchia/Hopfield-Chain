@@ -26,6 +26,7 @@ class HopfieldPlotter:
             "states" -> List[np.ndarray] (optional, if needed)
         """
         self.data = data
+        self.unsatisfied = self.data.get("unsatisfied", [])
         self.energies = self.data.get("energies", [])
         self.magnetizations = self.data.get("magnetizations", [])
         self.similarities = self.data.get("similarities", [])
@@ -97,13 +98,12 @@ class HopfieldPlotter:
         fig, axes = plt.subplots(
             nrows=2, ncols=2, figsize=(6, 6), sharex=True, squeeze=False
         )
-
         self._plot_metric(
             ax=axes[0, 0],
-            y_values=self.energies,
-            color="blue",
-            ylabel="Energy",
-            title="Energy vs. Step",
+            y_values=self.unsatisfied,
+            color="black",
+            ylabel="Neuroni flippandi",
+            title="Neuroni flippandi vs. Step",
         )
         self._plot_metric(
             ax=axes[1, 0],
@@ -119,7 +119,12 @@ class HopfieldPlotter:
             ylabel="Similarity",
             title="Similarity vs. Step",
         )
-
-        axes[1, 1].axis("off")
+        self._plot_metric(
+            ax=axes[1, 1],
+            y_values=self.energies,
+            color="blue",
+            ylabel="Energy (misnomer)",
+            title="Energy (misnomer) vs. Step",
+        )
         plt.tight_layout()
         return fig

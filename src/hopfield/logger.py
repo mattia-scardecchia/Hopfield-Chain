@@ -1,6 +1,5 @@
 from typing import Dict, List
 import numpy as np
-from scipy.spatial.distance import cosine
 
 from .network import HopfieldNetwork
 
@@ -21,6 +20,7 @@ class Logger:
         """
         self.log_interval = log_interval
         self.state_history: List[np.ndarray] = []
+        self.unsat_history: List[int] = []
         self.energy_history: List[float] = []
         self.magnetization_history: List[float] = []
         self.similarity_history: List[float] = []
@@ -32,6 +32,7 @@ class Logger:
         """
         if step % self.log_interval == 0:
             self.state_history.append(network.state.copy())
+            self.unsat_history.append(network.num_unsatisfied_neurons())
             self.energy_history.append(network.total_energy())
             self.magnetization_history.append(network.total_magnetization())
             self.similarity_history.append(
@@ -46,6 +47,7 @@ class Logger:
             "log_interval": self.log_interval,
             "initial_state": self.reference_state,
             "states": self.state_history,
+            "unsatisfied": self.unsat_history,
             "energies": self.energy_history,
             "magnetizations": self.magnetization_history,
             "similarities": self.similarity_history,
