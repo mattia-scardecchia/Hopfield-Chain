@@ -11,7 +11,9 @@ class CouplingInitializer(ABC):
     """
 
     @abstractmethod
-    def initialize_coupling(self, N: int, rng: np.random.Generator) -> np.ndarray:
+    def initialize_coupling(
+        self, rng: np.random.Generator, N: int, J_D: float
+    ) -> np.ndarray:
         """
         Returns an NxN matrix of couplings.
         """
@@ -34,13 +36,18 @@ class SymmetricCoupling(CouplingInitializer):
         self.mean = mean
         self.std = std
 
-    def initialize_coupling(self, N: int, rng: np.random.Generator) -> np.ndarray:
+    def initialize_coupling(
+        self,
+        rng: np.random.Generator,
+        N: int,
+        J_D: float = 0.0,
+    ) -> np.ndarray:
         """
         Returns a symmetric NxN coupling matrix.
         """
         J = rng.normal(loc=self.mean, scale=self.std, size=(N, N))
-        J = 0.5 * (J + J.T)
-        np.fill_diagonal(J, 0.0)
+        J = 0.5 * (J + J.T) / np.sqrt(N)
+        np.fill_diagonal(J, J_D)
         return J
 
 
@@ -61,12 +68,17 @@ class AsymmetricCoupling(CouplingInitializer):
         self.mean = mean
         self.std = std
 
-    def initialize_coupling(self, N: int, rng: np.random.Generator) -> np.ndarray:
+    def initialize_coupling(
+        self,
+        rng: np.random.Generator,
+        N: int,
+        J_D: float = 0.0,
+    ) -> np.ndarray:
         """
         Returns an asymmetric NxN coupling matrix.
         """
-        J = rng.normal(loc=self.mean, scale=self.std, size=(N, N))
-        np.fill_diagonal(J, 0.0)
+        J = rng.normal(loc=self.mean, scale=self.std, size=(N, N)) / np.sqrt(N)
+        np.fill_diagonal(J, J_D)
         return J
 
 

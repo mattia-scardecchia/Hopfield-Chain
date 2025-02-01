@@ -35,9 +35,13 @@ class HopfieldNetwork:
             Random number generator for reproducibility.
         """
         self.N = N
+        self.J_D = J_D
         self.rng = rng if rng is not None else np.random.default_rng()
-        self.J = coupling_initializer.initialize_coupling(N, self.rng)
-        np.fill_diagonal(self.J, J_D)
+        self.J = coupling_initializer.initialize_coupling(
+            self.rng,
+            self.N,
+            self.J_D,
+        )
         self.state = np.zeros(N, dtype=int)
 
     def initialize_state(
@@ -52,23 +56,23 @@ class HopfieldNetwork:
     def local_field(self, i: int) -> float:
         """
         Returns the local field at neuron i, which is:
-        1/sqrt(N) sum_j J[i, j] * state[j].
+        sum_j J[i, j] * state[j].
         """
-        return float(np.dot(self.J[i], self.state) / np.sqrt(self.N))
+        return float(np.dot(self.J[i], self.state))
 
     def total_energy(self) -> float:
         """
         Computes the total energy of the current state.
-        E = - 1/sqrt(N) * sum_{i,j} J[i,j] * s[i] * s[j].
+        E = - 1/2 * sum_{i,j} J[i,j] * s[i] * s[j].
         """
-        return -float(self.state.dot(self.J).dot(self.state) / np.sqrt(self.N))
+        return -0.5 * float(self.state.dot(self.J).dot(self.state))
 
     def all_pairs_energy(self) -> np.ndarray:
         """
         For each pair of neurons, computes the energy associated with
-        their interaction.
+        their interaction: -1/2 * J[i,j] * s[i] * s[j].
         """
-        return -np.outer(self.state, self.state) * self.J / np.sqrt(self.N)
+        return -0.5 * np.outer(self.state, self.state) * self.J
 
     def total_magnetization(self) -> float:
         """
