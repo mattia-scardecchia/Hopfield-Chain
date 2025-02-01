@@ -7,25 +7,27 @@ import hydra
 from omegaconf import DictConfig
 from hydra.core.hydra_config import HydraConfig
 
-from src.hopfield.dynamics import AsynchronousDeterministicUpdate
-from src.hopfield.initializer import (
+from src.single_net.dynamics import AsynchronousDeterministicUpdate
+from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,
     random_sampler,
 )
-from src.hopfield.logger import Logger
-from src.hopfield.network import HopfieldNetwork
-from src.hopfield.plotter import HopfieldPlotter
-from src.hopfield.simulation import HopfieldSimulation
-from src.hopfield.stopping import SimpleStoppingCondition
-from src.hopfield.utils import (
+from src.single_net.logger import HopfieldLogger
+from src.network.network import HopfieldNetwork
+from src.single_net.plotter import HopfieldPlotter
+from src.single_net.simulation import HopfieldSimulation
+from src.single_net.stopping import SimpleStoppingCondition
+from src.network.utils import (
     plot_couplings_histogram,
     plot_energy_pairs_histogram,
     plot_similarity_evolution_stability_analysis,
 )
 
 
-def analyze_local_stability_full(network, dynamics, num_steps=1000):
+def analyze_local_stability_full(
+    network, dynamics, num_steps=1000, check_convergence_interval=100, log_interval=100
+):
     """
     For each neuron, flip it from the initial state. Run the dynamics for num_steps.
     Compute the fraction of neurons that have returned to their initial state.
@@ -37,26 +39,40 @@ def analyze_local_stability_full(network, dynamics, num_steps=1000):
         network.set_state(initial_state.copy())
         network.state[i] *= -1
 
-        logger_obj = Logger(reference_state=initial_state, log_interval=1)
+        logger_obj = HopfieldLogger(reference_state=initial_state)
         stopping_condition = SimpleStoppingCondition(
-            max_iterations=num_steps, stable_steps_needed=None
+            max_iterations=num_steps,
+            check_convergence_interval=check_convergence_interval,
         )
         simulation = HopfieldSimulation(
-            network, dynamics, stopping_condition, logger_obj
+            network,
+            dynamics,
+            stopping_condition,
+            logger_obj,
+            log_interval=log_interval,
         )
         simulation.run()
         similarities.append(logger_obj.similarity_history)
         final_states.append(network.state)
         is_fixed_point.append(network.is_fixed_point())
-    return np.array(similarities), np.array(final_states), np.array(is_fixed_point)
+    max_len = max(len(sim) for sim in similarities)
+    padded_similarities = [
+        sim + [sim[-1]] * (max_len - len(sim)) for sim in similarities
+    ]
+    return (
+        np.array(padded_similarities),
+        np.array(final_states),
+        np.array(is_fixed_point),
+    )
 
 
-def simulate(
+def simulate_single_net(
     N: int,
     symmetric: bool,
     J_D: float,
     max_iterations: int,
     log_interval: int,
+    check_convergence_interval: int,
     seed: int,
 ):
     """
@@ -74,18 +90,21 @@ def simulate(
     network = HopfieldNetwork(N=N, coupling_initializer=initializer, J_D=J_D, rng=rng)
     dynamics = AsynchronousDeterministicUpdate(rng=rng)
     stopping_condition = SimpleStoppingCondition(
-        max_iterations=max_iterations, stable_steps_needed=None
+        max_iterations=max_iterations,
+        check_convergence_interval=check_convergence_interval,
     )
 
     logging.info("============ Running simulation ============")
     network.initialize_state(random_sampler)
-    logger_obj = Logger(log_interval=log_interval, reference_state=network.state)
-    simulation = HopfieldSimulation(network, dynamics, stopping_condition, logger_obj)
+    logger_obj = HopfieldLogger(reference_state=network.state)
+    simulation = HopfieldSimulation(
+        network, dynamics, stopping_condition, logger_obj, log_interval=log_interval
+    )
     logging.info(
         f"Fraction of Unsatisfied neurons at init: {network.num_unsatisfied_neurons() / network.N:.4f}"
     )
     simulation.run()
-    total_steps = len(logger_obj.energy_history) * logger_obj.log_interval
+    total_steps = logger_obj.log_steps[-1]
     logging.info(
         f"Fraction of Unsatisfied neurons after {total_steps} steps: {network.num_unsatisfied_neurons() / network.N:.4f}"
     )
@@ -95,16 +114,17 @@ def simulate(
     return network, logger_obj, plotter, fig
 
 
-@hydra.main(config_path="../configs", config_name="config", version_base="1.3")
+@hydra.main(config_path="../configs", config_name="single_net", version_base="1.3")
 def main(cfg: DictConfig):
     output_dir = HydraConfig.get().runtime.output_dir
 
-    network, logger_obj, plotter, fig1 = simulate(
+    network, logger_obj, plotter, fig1 = simulate_single_net(
         N=cfg.simulation.N,
         symmetric=cfg.simulation.symmetric,
         J_D=cfg.simulation.J_D,
         max_iterations=cfg.simulation.max_iterations,
         log_interval=cfg.simulation.log_interval,
+        check_convergence_interval=cfg.simulation.check_convergence_interval,
         seed=cfg.simulation.seed,
     )
 
@@ -131,7 +151,13 @@ def main(cfg: DictConfig):
         )
     elif not cfg.stability.skip:
         similarities, final_states, is_fixed_point = analyze_local_stability_full(
-            network, AsynchronousDeterministicUpdate(rng=None), cfg.stability.num_steps
+            network,
+            AsynchronousDeterministicUpdate(
+                rng=np.random.default_rng(cfg.stability.seed)
+            ),
+            cfg.stability.num_steps,
+            check_convergence_interval=cfg.stability.check_convergence_interval,
+            log_interval=cfg.stability.log_interval,
         )
         has_returned = similarities[:, -1] == 1
         has_converged_elsewhere = np.logical_and(~has_returned, is_fixed_point)

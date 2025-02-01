@@ -64,7 +64,7 @@ def plot_similarity_evolution_stability_analysis(
         title_not_returned += f" ({np.mean(~has_returned) * 100:.0f}%)."
     axes[0, 1].set_title(title_not_returned)
     fig_title = "Local stability analysis."
-    if is_fixed_point is not None:
+    if has_returned is not None and is_fixed_point is not None:
         fig_title += f" Perturbations converged to fixed point: {np.mean(is_fixed_point) * 100:.0f}%"
         fig_title += f" (original: {np.mean(has_returned & is_fixed_point) * 100:.0f}%, other: {np.mean(~has_returned & is_fixed_point) * 100:.0f}%)"
     fig.suptitle(fig_title)
@@ -72,7 +72,6 @@ def plot_similarity_evolution_stability_analysis(
     return fig
 
 
-# The analyze_local_stability_random function is kept but commented out.
 # def analyze_local_stability_random(
 #     network, dynamics, num_flips=10, num_steps=1000, num_trials=30, seed=42
 # ):

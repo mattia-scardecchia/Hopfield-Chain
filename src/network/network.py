@@ -59,16 +59,16 @@ class HopfieldNetwork:
     def total_energy(self) -> float:
         """
         Computes the total energy of the current state.
-        E = - 1/2 * sum_{i,j} J[i,j] * s[i] * s[j].
+        E = - sum_{i,j} J[i,j] * s[i] * s[j].
         """
-        return -0.5 * float(self.state.dot(self.J).dot(self.state))
+        return -float(self.state.dot(self.J).dot(self.state))
 
     def all_pairs_energy(self) -> np.ndarray:
         """
         For each pair of neurons, computes the energy associated with
-        their interaction: -1/2 * J[i,j] * s[i] * s[j].
+        their interaction: J[i,j] * s[i] * s[j].
         """
-        return -0.5 * np.outer(self.state, self.state) * self.J
+        return -np.outer(self.state, self.state) * self.J
 
     def total_magnetization(self) -> float:
         """

@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Callable, Dict, List
-from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
-import numpy as np
+
+from src.network.network import HopfieldNetwork
 
 
 class BaseStoppingCondition(ABC):
@@ -17,7 +15,7 @@ class BaseStoppingCondition(ABC):
         """
 
     @abstractmethod
-    def check(self, flips: int) -> bool:
+    def check(self, network: HopfieldNetwork) -> bool:
         """
         Checks if the simulation should stop.
         Returns True to stop, False otherwise.
@@ -30,7 +28,7 @@ class SimpleStoppingCondition(BaseStoppingCondition):
     """
 
     def __init__(
-        self, max_iterations: int = 1000, stable_steps_needed: Optional[int] = None
+        self, max_iterations: int, check_convergence_interval: int = 1000
     ) -> None:
         """
         Parameters
@@ -41,18 +39,16 @@ class SimpleStoppingCondition(BaseStoppingCondition):
             Number of consecutive update steps without changes to declare stability.
         """
         self.max_iterations = max_iterations
-        self.stable_steps_needed = stable_steps_needed
+        self.check_convergence_interval = check_convergence_interval
         self.iteration_count = 0
-        self.stable_steps_count = 0
 
     def reset(self) -> None:
         """
         Resets internal counters.
         """
         self.iteration_count = 0
-        self.stable_steps_count = 0
 
-    def check(self, flips: int) -> bool:
+    def check(self, network: HopfieldNetwork) -> bool:
         """
         Checks if the simulation should stop.
         Increments iteration_count.
@@ -60,15 +56,7 @@ class SimpleStoppingCondition(BaseStoppingCondition):
         Returns True if conditions are met, else False.
         """
         self.iteration_count += 1
-        if flips == 0:
-            self.stable_steps_count += 1
-        else:
-            self.stable_steps_count = 0
-        if self.iteration_count >= self.max_iterations:
-            return True
-        if (
-            self.stable_steps_needed is not None
-            and self.stable_steps_count >= self.stable_steps_needed
-        ):
-            return True
-        return False
+        if self.iteration_count % self.check_convergence_interval == 0:
+            if network.is_fixed_point():
+                return True
+        return self.iteration_count >= self.max_iterations

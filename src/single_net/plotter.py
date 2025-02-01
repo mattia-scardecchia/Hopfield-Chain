@@ -1,7 +1,5 @@
-from abc import ABC, abstractmethod
-from typing import Optional, Callable, Dict, List
+from typing import Dict, List
 from matplotlib import pyplot as plt
-import matplotlib.colors as mcolors
 import numpy as np
 
 
@@ -26,12 +24,11 @@ class HopfieldPlotter:
             "states" -> List[np.ndarray] (optional, if needed)
         """
         self.data = data
+        self.log_steps = self.data.get("steps", [])
         self.unsatisfied = self.data.get("unsatisfied", [])
         self.energies = self.data.get("energies", [])
         self.magnetizations = self.data.get("magnetizations", [])
         self.similarities = self.data.get("similarities", [])
-        self.log_interval = self.data.get("log_interval", 1)
-        self.x_values = np.arange(len(self.energies)) * self.log_interval
 
     def _plot_metric(
         self, ax: plt.Axes, y_values: List[float], color: str, ylabel: str, title: str
@@ -52,7 +49,7 @@ class HopfieldPlotter:
         title : str
             The title of the subplot.
         """
-        ax.plot(self.x_values, y_values, color=color)
+        ax.plot(self.log_steps, y_values, color=color)
         ax.set_ylabel(ylabel)
         ax.set_xlabel("Step")
         ax.set_title(title)

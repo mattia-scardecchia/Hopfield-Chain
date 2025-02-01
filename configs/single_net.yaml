@@ -14,16 +14,20 @@ hydra:
 name: prova
 
 simulation:
-  N: 1000            
+  N: 500     
+  J_D: 0.7                 
   symmetric: false     
-  J_D: 0.7          
   max_iterations: 1000000
+  check_convergence_interval: 1000
   log_interval: 1000
   seed: 42
 
 stability:
+  skip: false
   num_steps: 10000
-  skip: true
+  check_convergence_interval: 250
+  log_interval: 250
+  seed: 42
 
 logging:
   level: INFO

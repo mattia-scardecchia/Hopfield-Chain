@@ -1,8 +1,8 @@
 from typing import Optional
 
 from .dynamics import DynamicsController
-from .logger import Logger
-from .network import HopfieldNetwork
+from .logger import HopfieldLogger
+from ..network.network import HopfieldNetwork
 from .stopping import BaseStoppingCondition
 
 
@@ -17,7 +17,8 @@ class HopfieldSimulation:
         network: HopfieldNetwork,
         dynamics: DynamicsController,
         stopping_condition: BaseStoppingCondition,
-        logger: Optional[Logger] = None,
+        logger: Optional[HopfieldLogger] = None,
+        log_interval: int = 1,
     ) -> None:
         """
         Parameters
@@ -35,6 +36,7 @@ class HopfieldSimulation:
         self.dynamics = dynamics
         self.stopping_condition = stopping_condition
         self.logger = logger
+        self.log_interval = log_interval
 
     def run(self):
         """
@@ -44,9 +46,11 @@ class HopfieldSimulation:
         self.stopping_condition.reset()
         step = 0
         while True:
-            flips = self.dynamics.update_step(self.network)
-            if self.logger is not None:
+            _ = self.dynamics.update_step(self.network)
+            if self.logger and step % self.log_interval == 0:
                 self.logger.log_step(self.network, step)
-            if self.stopping_condition.check(flips):
+            if self.stopping_condition.check(self.network):
+                if self.logger and step % self.log_interval != 0:
+                    self.logger.log_step(self.network, step)
                 break
             step += 1
