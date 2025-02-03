@@ -1,6 +1,6 @@
 from typing import Dict, List
-from matplotlib import pyplot as plt
 
+from matplotlib import pyplot as plt
 
 # TODO: print final num unsatisfied neurons in the plot
 

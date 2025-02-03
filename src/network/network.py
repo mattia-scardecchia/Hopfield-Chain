@@ -1,4 +1,5 @@
-from typing import Optional, Callable
+from typing import Callable, Optional
+
 import numpy as np
 
 from .initializer import CouplingInitializer
@@ -49,12 +50,12 @@ class HopfieldNetwork:
         """
         self.state = sampler(self.N, self.rng)
 
-    def local_field(self, i: int) -> float:
+    def local_field(self, neuron_idx: int) -> float:
         """
         Returns the local field at neuron i, which is:
         sum_j J[i, j] * state[j].
         """
-        return float(np.dot(self.J[i], self.state))
+        return float(np.dot(self.J[neuron_idx], self.state))
 
     def total_energy(self) -> float:
         """

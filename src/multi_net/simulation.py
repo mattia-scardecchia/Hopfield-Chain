@@ -1,0 +1,125 @@
+import logging
+from typing import List
+
+import numpy as np
+
+from src.multi_net.logging import SimilaritiesLogger
+from src.network.initializer import (
+    AsymmetricCoupling,
+    SymmetricCoupling,
+    random_sampler,
+)
+from src.network.network import HopfieldNetwork
+from src.single_net.logger import HopfieldLogger
+
+
+class ReplicatedHopfieldSimulation:
+    def __init__(
+        self,
+        networks: List[HopfieldNetwork],
+        loggers: List[HopfieldLogger],
+        similarities_logger: SimilaritiesLogger,
+        k: float,
+        chained: bool = False,
+        log_interval: int = 1000,
+        check_convergence_interval: int = 1000,
+    ) -> None:
+        self.networks = networks
+        self.loggers = loggers
+        self.similarities_logger = similarities_logger
+        self.chained = chained
+        self.log_interval = log_interval
+        self.check_convergence_interval = check_convergence_interval
+
+        self.y = len(networks)
+        self.k = k
+        self.N = networks[0].N
+        self.neighbors = [self._get_neighbors(i) for i in range(self.y)]
+
+    def _get_neighbors(self, replica_idx: int) -> List[int]:
+        if self.chained:
+            return [(replica_idx - 1) % self.y, (replica_idx + 1) % self.y]
+        else:
+            return list(range(0, replica_idx)) + list(range(replica_idx + 1, self.y))
+
+    def local_field(self, replica_idx: int, neuron_idx: int) -> float:
+        internal_field = self.networks[replica_idx].local_field(neuron_idx)
+        interaction_field = self.k * sum(
+            [self.networks[i].state[neuron_idx] for i in self.neighbors[replica_idx]]
+        )
+        return internal_field + interaction_field
+
+    def check_convergence(self) -> bool:
+        return all([network.is_fixed_point() for network in self.networks])
+
+    def log_step(self, step: int):
+        for i, logger in enumerate(self.loggers):
+            logger.log_step(self.networks[i], step)
+        self.similarities_logger.log_step(self.networks, step)
+
+    def update_step(self, replica_idx: int, neuron_idx: int):
+        local_field = self.local_field(replica_idx, neuron_idx)
+        self.networks[replica_idx].state[neuron_idx] = np.sign(local_field)
+
+    def run(self, max_steps: int, seed: int = 0):
+        step = 0
+        rng = np.random.default_rng(seed)
+        while True:
+            for replica_idx in range(self.y):
+                neuron_idx = rng.integers(self.N)
+                self.update_step(replica_idx, neuron_idx)
+            if step % self.log_interval == 0:
+                self.log_step(step)
+            if (
+                step % self.check_convergence_interval == 0 and self.check_convergence()
+            ) or step >= max_steps:
+                if step % self.log_interval != 0:
+                    self.log_step(step)
+                break
+            step += 1
+        return [net.state.copy() for net in self.networks]
+
+
+def simulate_replicated_net(
+    N: int,
+    symmetric: bool,
+    J_D: float,
+    same_couplings: bool,
+    y: int,
+    k: float,
+    max_iterations: int,
+    log_interval: int,
+    check_convergence_interval: int,
+    seed: int,
+):
+    rng = np.random.default_rng(seed)
+    coupling_initializer = (
+        SymmetricCoupling(mean=0.0, std=1.0)
+        if symmetric
+        else AsymmetricCoupling(mean=0.0, std=1.0)
+    )
+    networks = [
+        HopfieldNetwork(
+            N=N, coupling_initializer=coupling_initializer, J_D=J_D, rng=rng
+        )
+        for _ in range(y)
+    ]
+    if same_couplings:
+        for i in range(1, y):
+            networks[i].J = networks[0].J.copy()
+    for net in networks:
+        net.initialize_state(sampler=random_sampler)
+    loggers = [HopfieldLogger(reference_state=net.state) for net in networks]
+    similarities_logger = SimilaritiesLogger()
+
+    simulation = ReplicatedHopfieldSimulation(
+        networks=networks,
+        loggers=loggers,
+        similarities_logger=similarities_logger,
+        k=k,
+        log_interval=log_interval,
+        check_convergence_interval=check_convergence_interval,
+    )
+    logging.info(msg="============ Running simulation ============")
+    simulation.run(max_steps=max_iterations, seed=seed)
+    return simulation

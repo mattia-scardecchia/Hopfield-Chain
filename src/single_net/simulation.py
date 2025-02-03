@@ -64,6 +64,7 @@ class HopfieldSimulation:
                     self.logger.log_step(self.network, step)
                 break
             step += 1
+        return self.network.state.copy()
 
 
 def simulate_single_net(

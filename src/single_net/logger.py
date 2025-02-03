@@ -1,4 +1,5 @@
 from typing import Dict, List
+
 import numpy as np
 
 from ..network.network import HopfieldNetwork
@@ -19,7 +20,7 @@ class HopfieldLogger:
             Copied and stored for comparison. Usually the initial state.
         """
         self.log_steps: List[int] = []
-        self.state_history: List[np.ndarray] = []
+        # self.state_history: List[np.ndarray] = []
         self.unsat_history: List[int] = []
         self.energy_history: List[float] = []
         self.magnetization_history: List[float] = []
@@ -31,7 +32,7 @@ class HopfieldLogger:
         Logs relevant data.
         """
         self.log_steps.append(step)
-        self.state_history.append(network.state.copy())
+        # self.state_history.append(network.state.copy())
         self.unsat_history.append(network.num_unsatisfied_neurons())
         self.energy_history.append(network.total_energy())
         self.magnetization_history.append(network.total_magnetization())
@@ -44,7 +45,7 @@ class HopfieldLogger:
         return {
             "initial_state": self.reference_state,
             "steps": self.log_steps,
-            "states": self.state_history,
+            # "states": self.state_history,
             "unsatisfied": self.unsat_history,
             "energies": self.energy_history,
             "magnetizations": self.magnetization_history,

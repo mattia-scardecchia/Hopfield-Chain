@@ -9,8 +9,6 @@ TODO:
       field computation...
 
 LATER:
-- refactor single_net submodule. Code should organized as follows:
-    - hopfield submodule: HopfieldNetwork object to hold a single single net.
-      Functionality to analyze a configuration (e.g. stability)
-    - single_net submodule: let a single net evolve
-    - replicated submodule: let a replicated system of nets evolve
+- simplify implementation of single_net submodule?
+  - it's arguably too abstract. e.g. stopping condition object is ridiculous.
+  - however, multi_net will likely supersede it --> wasted effort...
