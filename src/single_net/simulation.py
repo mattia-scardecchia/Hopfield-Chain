@@ -1,12 +1,19 @@
 import logging
 from typing import Optional
 
+import numpy as np
+
+from src.network.initializer import (
+    AsymmetricCoupling,
+    SymmetricCoupling,
+    random_sampler,
+)
 from src.single_net.plotter import HopfieldPlotter
 
-from .dynamics import DynamicsController
-from .logger import HopfieldLogger
 from ..network.network import HopfieldNetwork
-from .stopping import BaseStoppingCondition
+from .dynamics import AsynchronousDeterministicUpdate, DynamicsController
+from .logger import HopfieldLogger
+from .stopping import BaseStoppingCondition, SimpleStoppingCondition
 
 
 class HopfieldSimulation:
