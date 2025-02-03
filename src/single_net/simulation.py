@@ -1,4 +1,7 @@
+import logging
 from typing import Optional
+
+from src.single_net.plotter import HopfieldPlotter
 
 from .dynamics import DynamicsController
 from .logger import HopfieldLogger
@@ -54,3 +57,51 @@ class HopfieldSimulation:
                     self.logger.log_step(self.network, step)
                 break
             step += 1
+
+
+def simulate_single_net(
+    N: int,
+    symmetric: bool,
+    J_D: float,
+    max_iterations: int,
+    log_interval: int,
+    check_convergence_interval: int,
+    seed: int,
+):
+    """
+    Simulate relaxation of a Hopfield network.
+    """
+    if symmetric:
+        assert J_D == 0.0, "J_D should be 0 for symmetric networks"
+
+    rng = np.random.default_rng(seed)
+    initializer = (
+        SymmetricCoupling(mean=0.0, std=1.0)
+        if symmetric
+        else AsymmetricCoupling(mean=0.0, std=1.0)
+    )
+    network = HopfieldNetwork(N=N, coupling_initializer=initializer, J_D=J_D, rng=rng)
+    dynamics = AsynchronousDeterministicUpdate(rng=rng)
+    stopping_condition = SimpleStoppingCondition(
+        max_iterations=max_iterations,
+        check_convergence_interval=check_convergence_interval,
+    )
+
+    logging.info("============ Running simulation ============")
+    network.initialize_state(random_sampler)
+    logger_obj = HopfieldLogger(reference_state=network.state)
+    simulation = HopfieldSimulation(
+        network, dynamics, stopping_condition, logger_obj, log_interval=log_interval
+    )
+    logging.info(
+        f"Fraction of Unsatisfied neurons at init: {network.num_unsatisfied_neurons() / network.N:.4f}"
+    )
+    simulation.run()
+    total_steps = logger_obj.log_steps[-1]
+    logging.info(
+        f"Fraction of Unsatisfied neurons after {total_steps} steps: {network.num_unsatisfied_neurons() / network.N:.4f}"
+    )
+    logging.info("")
+    plotter = HopfieldPlotter(logger_obj.get_data())
+    fig = plotter.plot_all()
+    return network, logger_obj, plotter, fig

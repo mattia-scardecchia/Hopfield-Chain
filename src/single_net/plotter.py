@@ -1,6 +1,8 @@
 from typing import Dict, List
 from matplotlib import pyplot as plt
-import numpy as np
+
+
+# TODO: print final num unsatisfied neurons in the plot
 
 
 class HopfieldPlotter:
@@ -99,8 +101,11 @@ class HopfieldPlotter:
             ax=axes[0, 0],
             y_values=self.unsatisfied,
             color="black",
-            ylabel="Neuroni flippandi",
-            title="Neuroni flippandi vs. Step",
+            ylabel="Unsat neurons",
+            title="Unsat neurons vs. Step",
+        )
+        axes[0, 0].set_title(
+            "Unsat neurons vs. Step (final: {})".format(self.unsatisfied[-1])
         )
         self._plot_metric(
             ax=axes[1, 0],
