@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 import numpy as np
 
 
@@ -8,7 +9,7 @@ class CouplingInitializer(ABC):
     """
 
     @abstractmethod
-    def initialize_coupling(
+    def initialize_couplings(
         self, rng: np.random.Generator, N: int, J_D: float
     ) -> np.ndarray:
         """
@@ -33,7 +34,7 @@ class SymmetricCoupling(CouplingInitializer):
         self.mean = mean
         self.std = std
 
-    def initialize_coupling(
+    def initialize_couplings(
         self,
         rng: np.random.Generator,
         N: int,
@@ -65,7 +66,7 @@ class AsymmetricCoupling(CouplingInitializer):
         self.mean = mean
         self.std = std
 
-    def initialize_coupling(
+    def initialize_couplings(
         self,
         rng: np.random.Generator,
         N: int,
@@ -79,7 +80,7 @@ class AsymmetricCoupling(CouplingInitializer):
         return J
 
 
-def random_sampler(N: int, rng: np.random.Generator) -> np.ndarray:
+def binary_state_sampler(N: int, rng: np.random.Generator) -> np.ndarray:
     """
     Example sampler function returning random states in {+1, -1}.
     """

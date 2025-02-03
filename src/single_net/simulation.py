@@ -6,13 +6,12 @@ import numpy as np
 from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,
-    random_sampler,
+    binary_state_sampler,
 )
-from src.single_net.plotter import HopfieldPlotter
 
+from ..network.logging import HopfieldLogger
 from ..network.network import HopfieldNetwork
 from .dynamics import AsynchronousDeterministicUpdate, DynamicsController
-from .logger import HopfieldLogger
 from .stopping import BaseStoppingCondition, SimpleStoppingCondition
 
 
@@ -88,7 +87,13 @@ def simulate_single_net(
         if symmetric
         else AsymmetricCoupling(mean=0.0, std=1.0)
     )
-    network = HopfieldNetwork(N=N, coupling_initializer=initializer, J_D=J_D, rng=rng)
+    network = HopfieldNetwork(
+        N=N,
+        coupling_initializer=initializer,
+        state_initializer=binary_state_sampler,
+        J_D=J_D,
+        rng=rng,
+    )
     dynamics = AsynchronousDeterministicUpdate(rng=rng)
     stopping_condition = SimpleStoppingCondition(
         max_iterations=max_iterations,
@@ -96,20 +101,9 @@ def simulate_single_net(
     )
 
     logging.info("============ Running simulation ============")
-    network.initialize_state(random_sampler)
-    logger_obj = HopfieldLogger(reference_state=network.state)
+    logger = HopfieldLogger(reference_state=network.state)
     simulation = HopfieldSimulation(
-        network, dynamics, stopping_condition, logger_obj, log_interval=log_interval
-    )
-    logging.info(
-        f"Fraction of Unsatisfied neurons at init: {network.num_unsatisfied_neurons() / network.N:.4f}"
+        network, dynamics, stopping_condition, logger, log_interval=log_interval
     )
     simulation.run()
-    total_steps = logger_obj.log_steps[-1]
-    logging.info(
-        f"Fraction of Unsatisfied neurons after {total_steps} steps: {network.num_unsatisfied_neurons() / network.N:.4f}"
-    )
-    logging.info("")
-    plotter = HopfieldPlotter(logger_obj.get_data())
-    fig = plotter.plot_all()
-    return network, logger_obj, plotter, fig
+    return network, logger

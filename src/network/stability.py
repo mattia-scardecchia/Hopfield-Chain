@@ -1,8 +1,9 @@
 import logging
+
 import numpy as np
 from tqdm import tqdm
 
-from src.single_net.logger import HopfieldLogger
+from src.network.logging import HopfieldLogger
 from src.single_net.simulation import HopfieldSimulation
 from src.single_net.stopping import SimpleStoppingCondition
 
@@ -21,7 +22,7 @@ def analyze_local_stability_full(
         network.set_state(initial_state.copy())
         network.state[i] *= -1
 
-        logger_obj = HopfieldLogger(reference_state=initial_state)
+        logger = HopfieldLogger(reference_state=initial_state)
         stopping_condition = SimpleStoppingCondition(
             max_iterations=num_steps,
             check_convergence_interval=check_convergence_interval,
@@ -30,16 +31,20 @@ def analyze_local_stability_full(
             network,
             dynamics,
             stopping_condition,
-            logger_obj,
+            logger,
             log_interval=log_interval,
         )
-        simulation.run()
-        similarities.append(logger_obj.similarity_history)
-        final_states.append(network.state)
-        is_fixed_point.append(network.is_fixed_point())
-    max_len = max(len(sim) for sim in similarities)
+        state = simulation.run()
+        final_states.append(state)
+        assert (
+            network.is_fixed_point() == logger.logs["is_fixed_point"][-1]
+        )  # TODO: remove
+        is_fixed_point.append(logger.logs["is_fixed_point"][-1])
+        similarities.append(logger.logs["ref_state_similarity"])
+
+    max_length = max(len(sim) for sim in similarities)
     padded_similarities = [
-        sim + [sim[-1]] * (max_len - len(sim)) for sim in similarities
+        sim + [sim[-1]] * (max_length - len(sim)) for sim in similarities
     ]
     return (
         np.array(padded_similarities),

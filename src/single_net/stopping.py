@@ -52,7 +52,6 @@ class SimpleStoppingCondition(BaseStoppingCondition):
         """
         Checks if the simulation should stop.
         Increments iteration_count.
-        Increments stable_steps_count if no flips occurred, otherwise resets it.
         Returns True if conditions are met, else False.
         """
         self.iteration_count += 1

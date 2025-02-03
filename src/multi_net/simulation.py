@@ -7,10 +7,10 @@ from src.multi_net.logging import SimilaritiesLogger
 from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,
-    random_sampler,
+    binary_state_sampler,
 )
+from src.network.logging import HopfieldLogger
 from src.network.network import HopfieldNetwork
-from src.single_net.logger import HopfieldLogger
 
 
 class ReplicatedHopfieldSimulation:
@@ -100,15 +100,17 @@ def simulate_replicated_net(
     )
     networks = [
         HopfieldNetwork(
-            N=N, coupling_initializer=coupling_initializer, J_D=J_D, rng=rng
+            N=N,
+            coupling_initializer=coupling_initializer,
+            state_initializer=binary_state_sampler,
+            J_D=J_D,
+            rng=rng,
         )
         for _ in range(y)
     ]
     if same_couplings:
         for i in range(1, y):
             networks[i].J = networks[0].J.copy()
-    for net in networks:
-        net.initialize_state(sampler=random_sampler)
     loggers = [HopfieldLogger(reference_state=net.state) for net in networks]
     similarities_logger = SimilaritiesLogger()
 

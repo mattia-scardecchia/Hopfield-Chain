@@ -2,8 +2,6 @@ from typing import Dict, List
 
 from matplotlib import pyplot as plt
 
-# TODO: print final num unsatisfied neurons in the plot
-
 
 class HopfieldPlotter:
     """
@@ -27,10 +25,11 @@ class HopfieldPlotter:
         """
         self.data = data
         self.log_steps = self.data.get("steps", [])
-        self.unsatisfied = self.data.get("unsatisfied", [])
-        self.energies = self.data.get("energies", [])
-        self.magnetizations = self.data.get("magnetizations", [])
-        self.similarities = self.data.get("similarities", [])
+        self.unsatisfied = self.data.get("unsat", [])
+        self.energies = self.data.get("pseudo_energy", [])
+        self.magnetizations = self.data.get("magnetization", [])
+        self.similarities = self.data.get("ref_state_similarity", [])
+        self.is_fixed_point = self.data.get("is_fixed_point", [])
 
     def _plot_metric(
         self, ax: plt.Axes, y_values: List[float], color: str, ylabel: str, title: str
@@ -56,38 +55,6 @@ class HopfieldPlotter:
         ax.set_xlabel("Step")
         ax.set_title(title)
         ax.grid(True, linestyle="--", alpha=0.6)
-
-    def plot_energies(self, title: str = "Energy vs. Step") -> None:
-        """
-        Creates a figure and plots the energy over simulation steps,
-        taking into account the log interval.
-
-        Parameters
-        ----------
-        title : str
-            Title for the energy plot.
-        """
-        fig, ax = plt.subplots(figsize=(6, 4))
-        self._plot_metric(ax, self.energies, "blue", "Energy", title)
-        ax.set_xlabel("Step")
-        plt.tight_layout()
-        plt.show()
-
-    def plot_magnetization(self, title: str = "Magnetization vs. Step") -> None:
-        """
-        Creates a figure and plots the magnetization over simulation steps,
-        taking into account the log interval.
-
-        Parameters
-        ----------
-        title : str
-            Title for the magnetization plot.
-        """
-        fig, ax = plt.subplots(figsize=(6, 4))
-        self._plot_metric(ax, self.magnetizations, "red", "Magnetization", title)
-        ax.set_xlabel("Step")
-        plt.tight_layout()
-        plt.show()
 
     def plot_all(self):
         """

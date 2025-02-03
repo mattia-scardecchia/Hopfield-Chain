@@ -1,26 +1,28 @@
-import os
 import logging
-from matplotlib import pyplot as plt
-import numpy as np
+import os
+
 import hydra
-from omegaconf import DictConfig
+import numpy as np
 from hydra.core.hydra_config import HydraConfig
+from matplotlib import pyplot as plt
+from omegaconf import DictConfig
 
 from src.network.stability import analyze_local_stability_full
-from src.single_net.dynamics import AsynchronousDeterministicUpdate
-from src.single_net.simulation import simulate_single_net
 from src.network.utils import (
     plot_couplings_histogram,
     plot_energy_pairs_histogram,
     plot_similarity_evolution_stability_analysis,
 )
+from src.single_net.dynamics import AsynchronousDeterministicUpdate
+from src.single_net.plotting import HopfieldPlotter
+from src.single_net.simulation import simulate_single_net
 
 
 @hydra.main(config_path="../configs", config_name="single_net", version_base="1.3")
 def main(cfg: DictConfig):
     output_dir = HydraConfig.get().runtime.output_dir
 
-    network, logger_obj, plotter, fig1 = simulate_single_net(
+    network, logger = simulate_single_net(
         N=cfg.simulation.N,
         symmetric=cfg.simulation.symmetric,
         J_D=cfg.simulation.J_D,
@@ -29,6 +31,8 @@ def main(cfg: DictConfig):
         check_convergence_interval=cfg.simulation.check_convergence_interval,
         seed=cfg.simulation.seed,
     )
+    plotter = HopfieldPlotter(logger.get_logs())
+    fig1 = plotter.plot_all()
 
     fig1_path = os.path.join(output_dir, "simulation_plot.png")
     fig1.savefig(fig1_path)

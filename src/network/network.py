@@ -1,8 +1,8 @@
-from typing import Callable, Optional
+from typing import Optional
 
 import numpy as np
 
-from .initializer import CouplingInitializer
+from .initializer import CouplingInitializer, binary_state_sampler
 
 
 class HopfieldNetwork:
@@ -16,6 +16,7 @@ class HopfieldNetwork:
         self,
         N: int,
         coupling_initializer: CouplingInitializer,
+        state_initializer=None,
         J_D: float = 0.0,
         rng: Optional[np.random.Generator] = None,
     ) -> None:
@@ -33,22 +34,23 @@ class HopfieldNetwork:
         """
         self.N = N
         self.J_D = J_D
-        self.rng = rng if rng is not None else np.random.default_rng()
-        self.J = coupling_initializer.initialize_coupling(
+        self.rng = rng if rng else np.random.default_rng()
+        self.J = coupling_initializer.initialize_couplings(
             self.rng,
             self.N,
             self.J_D,
         )
-        self.state = np.zeros(N, dtype=int)
+        if state_initializer is None:
+            state_initializer = binary_state_sampler
+        self.state_initializer = state_initializer
+        self.initialize_state()
 
-    def initialize_state(
-        self, sampler: Callable[[int, np.random.Generator], np.ndarray]
-    ) -> None:
+    def initialize_state(self) -> None:
         """
         Initializes the network state using a given sampler function,
         which should accept (N, rng) and return an array of shape (N,) in {+1, -1}.
         """
-        self.state = sampler(self.N, self.rng)
+        self.state = self.state_initializer(self.N, self.rng)
 
     def local_field(self, neuron_idx: int) -> float:
         """
