@@ -29,7 +29,6 @@ class HopfieldPlotter:
         self.energies = self.data.get("pseudo_energy", [])
         self.magnetizations = self.data.get("magnetization", [])
         self.similarities = self.data.get("ref_state_similarity", [])
-        self.is_fixed_point = self.data.get("is_fixed_point", [])
 
     def _plot_metric(
         self, ax: plt.Axes, y_values: List[float], color: str, ylabel: str, title: str
@@ -62,7 +61,7 @@ class HopfieldPlotter:
         Reuses the _plot_metric method on each axis.
         """
         fig, axes = plt.subplots(
-            nrows=2, ncols=2, figsize=(6, 6), sharex=True, squeeze=False
+            nrows=2, ncols=2, figsize=(12, 8), sharex=True, squeeze=False
         )
         self._plot_metric(
             ax=axes[0, 0],
@@ -75,25 +74,26 @@ class HopfieldPlotter:
             "Unsat neurons vs. Step (final: {})".format(self.unsatisfied[-1])
         )
         self._plot_metric(
-            ax=axes[1, 0],
+            ax=axes[0, 1],
             y_values=self.magnetizations,
             color="red",
             ylabel="Magnetization",
             title="Magnetization vs. Step",
         )
         self._plot_metric(
-            ax=axes[0, 1],
+            ax=axes[1, 0],
             y_values=self.similarities,
             color="green",
             ylabel="Similarity",
             title="Similarity vs. Step",
         )
+        axes[1, 0].axhline(y=0.5, color="grey", linestyle="--", alpha=0.6)
         self._plot_metric(
             ax=axes[1, 1],
             y_values=self.energies,
             color="blue",
-            ylabel="Energy (misnomer)",
-            title="Energy (misnomer) vs. Step",
+            ylabel="Pseudo-Energy",
+            title="Pseudo-Energy vs. Step",
         )
         plt.tight_layout()
         return fig

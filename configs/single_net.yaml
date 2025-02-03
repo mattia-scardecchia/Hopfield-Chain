@@ -1,15 +1,5 @@
-hydra:
-  job:
-    chdir: False
-    config:
-      override_dirname:
-        exclude_keys:
-          - name
-  run:
-    dir: outputs/${name}/${now:%Y-%m-%d-%H-%M-%S}
-  sweep:
-    dir: multirun/${name}/${now:%Y-%m-%d-%H-%M-%S}
-    subdir: cfg:${hydra.job.override_dirname}
+defaults:
+  - /hydra@_here_
 
 name: prova
 
@@ -28,6 +18,3 @@ stability:
   check_convergence_interval: 250
   log_interval: 250
   seed: 42
-
-logging:
-  level: INFO

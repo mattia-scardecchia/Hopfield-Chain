@@ -25,9 +25,9 @@ def main(cfg):
         check_convergence_interval=cfg.simulation.check_convergence_interval,
         seed=cfg.simulation.seed,
     )
-    plotter = ReplicatedPlotter(simulation.loggers, simulation.similarities_logger)
+    plotter = ReplicatedPlotter(simulation.loggers, simulation.ensemble_logger)
 
-    fig1 = plotter.plot_all()
+    fig1 = plotter.plot_all_metrics()
     fig1_path = os.path.join(output_dir, "simulation_plot.png")
     fig1.savefig(fig1_path)
     plt.close(fig1)

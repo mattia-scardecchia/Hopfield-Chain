@@ -1,22 +1,25 @@
-from typing import Dict, List
+from collections import defaultdict
+from typing import Dict
 
 import numpy as np
 
-from src.network.network import HopfieldNetwork
+from src.multi_net.ensemble import HopfieldEnsemble
 
 
-class SimilaritiesLogger:
+class EnsembleLogger:
     def __init__(self):
-        self.steps = []
-        self.avg_similarity_history = []
+        self.logs = defaultdict(list)
 
-    def log_step(self, networks: List[HopfieldNetwork], step: int) -> None:
-        self.steps.append(step)
-        sims, y = [], len(networks)
+    def log_step(self, ensemble: HopfieldEnsemble, step: int) -> None:
+        self.logs["steps"].append(step)
+        sims, y, networks = [], ensemble.y, ensemble.networks
         for i in range(y):
             for j in range(i + 1, y):
                 sims.append(networks[i].state_similarity(networks[j].state))
-        self.avg_similarity_history.append(np.mean(sims))
+        self.logs["avg_similarity"].append(np.mean(sims))
+        self.logs["unsat_with_replicas_interaction"].append(
+            ensemble.num_unsatisfied_neurons_with_replicas_interaction()
+        )
 
-    def get_data(self) -> Dict:
-        return {"steps": self.steps, "avg_similarities": self.avg_similarity_history}
+    def get_logs(self) -> Dict:
+        return dict(self.logs)
