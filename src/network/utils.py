@@ -1,7 +1,8 @@
 from typing import Optional
-import numpy as np
-import matplotlib.pyplot as plt
+
 import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def visualize_state(state: np.ndarray) -> plt.Figure:
@@ -40,18 +41,20 @@ def plot_energy_pairs_histogram(energies: np.ndarray) -> plt.Figure:
 
 def plot_similarity_evolution_stability_analysis(
     similarities: np.ndarray,
+    log_interval: int,
     has_returned: Optional[np.ndarray] = None,
     is_fixed_point: Optional[np.ndarray] = None,
 ) -> plt.Figure:
     fig, axes = plt.subplots(
         nrows=1, ncols=2, figsize=(12, 4), sharey=True, squeeze=False
     )
+    x_axis = np.arange(0, similarities.shape[1] * log_interval, log_interval)
     for i, sim in enumerate(similarities):
         if similarities[i, -1] == 1:
             ax = axes[0, 0]
         else:
             ax = axes[0, 1]
-        ax.plot(sim, label=f"Trial {i + 1}")
+        ax.plot(x_axis, sim, label=f"Trial {i + 1}")
     for ax in axes.flat:
         ax.set_xlabel("Step")
         ax.set_ylabel("similarity")

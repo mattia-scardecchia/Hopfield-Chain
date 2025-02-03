@@ -7,6 +7,8 @@ from src.network.logging import HopfieldLogger
 from src.single_net.simulation import HopfieldSimulation
 from src.single_net.stopping import SimpleStoppingCondition
 
+# TODO: introduce a threshold for the similarity with initial state; if it's below, stop the simulation
+
 
 def analyze_local_stability_full(
     network, dynamics, num_steps=1000, check_convergence_interval=100, log_interval=100
@@ -36,9 +38,6 @@ def analyze_local_stability_full(
         )
         state = simulation.run()
         final_states.append(state)
-        assert (
-            network.is_fixed_point() == logger.logs["is_fixed_point"][-1]
-        )  # TODO: remove
         is_fixed_point.append(logger.logs["is_fixed_point"][-1])
         similarities.append(logger.logs["ref_state_similarity"])
 

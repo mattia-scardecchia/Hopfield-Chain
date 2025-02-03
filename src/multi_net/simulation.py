@@ -13,6 +13,8 @@ from src.network.initializer import (
 from src.network.logging import HopfieldLogger
 from src.network.network import HopfieldNetwork
 
+# TODO: allow annealing of k
+
 
 class ReplicatedHopfieldSimulation:
     def __init__(

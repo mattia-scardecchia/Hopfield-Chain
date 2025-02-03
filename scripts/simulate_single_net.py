@@ -79,7 +79,7 @@ def main(cfg: DictConfig):
         )
 
         fig4 = plot_similarity_evolution_stability_analysis(
-            similarities, has_returned, is_fixed_point
+            similarities, cfg.stability.log_interval, has_returned, is_fixed_point
         )
         fig4_path = os.path.join(output_dir, "stability_analysis.png")
         fig4.savefig(fig4_path)

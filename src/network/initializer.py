@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+# TODO: add binary coupling initializers
+
 
 class CouplingInitializer(ABC):
     """
