@@ -2,8 +2,13 @@ defaults:
   - /hydra@_here_
   - base
 
-simulation:               
-  same_couplings: true  # if true, replicas share J
-  y: 5                  # number of replicas
-  k: 0.2                # strength of coupling between replicas
+simulation:
+  J_D: 0.6               
+  share_J: false         # if true, replicas share J
+  chained: true         # if true, replicas interact in a chain
+  y: 5                   # number of replicas
+  k: 0.7                 # strength of coupling between replicas
   anneal_k: null         # if null, no annealing
+  left_field: ones    # if null, no field
+  right_field: minus_ones   # if null, no field
+  h: 0.0                 # external field strength

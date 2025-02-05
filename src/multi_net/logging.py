@@ -12,11 +12,16 @@ class EnsembleLogger:
 
     def log_step(self, ensemble: HopfieldEnsemble, step: int) -> None:
         self.logs["steps"].append(step)
-        sims, y, networks = [], ensemble.y, ensemble.networks
+        y, networks = ensemble.y, ensemble.networks
+        sims = np.empty((y, y))
         for i in range(y):
             for j in range(i + 1, y):
-                sims.append(networks[i].state_similarity(networks[j].state))
-        self.logs["avg_similarity"].append(np.mean(sims))
+                sims[i, j] = networks[i].state_similarity(networks[j].state)
+        self.logs["avg_similarity"].append(np.sum(sims) / (y * (y - 1) / 2))
+        self.logs["avg_pairwise_similarity"].append(
+            np.mean([sims[i, i + 1] for i in range(y - 1)])
+        )
+        # self.logs["avg_pairwise_similarity"].append(np.mean([]))
         self.logs["unsat_with_replicas_interaction"].append(
             ensemble.num_unsatisfied_neurons_with_replicas_interaction()
         )

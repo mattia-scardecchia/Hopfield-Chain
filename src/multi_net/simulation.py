@@ -26,8 +26,13 @@ class ReplicatedHopfieldSimulation:
         log_interval: int = 1000,
         check_convergence_interval: int = 1000,
         anneal_k: Optional[float] = None,
+        left_field: Optional[np.ndarray] = None,
+        right_field: Optional[np.ndarray] = None,
+        h: float = 0.0,
     ) -> None:
-        self.ensemble = HopfieldEnsemble(networks, k, chained)
+        self.ensemble = HopfieldEnsemble(
+            networks, k, chained, left_field, right_field, h=h
+        )
         self.networks = self.ensemble.networks  # for convenience
         self.loggers = loggers
         self.ensemble_logger = ensemble_logger
@@ -93,14 +98,18 @@ def simulate_replicated_net(
     N: int,
     symmetric: bool,
     J_D: float,
-    same_couplings: bool,
+    share_J: bool,
     y: int,
     k: float,
+    chained: bool,
     max_steps: int,
     log_interval: int,
     check_convergence_interval: int,
     seed: int,
     anneal_k: Optional[float] = None,
+    left_field: Optional[np.ndarray] = None,
+    right_field: Optional[np.ndarray] = None,
+    h: float = 0.0,
 ):
     rng = np.random.default_rng(seed)
     coupling_initializer = (
@@ -118,7 +127,7 @@ def simulate_replicated_net(
         )
         for _ in range(y)
     ]
-    if same_couplings:
+    if share_J:
         for i in range(1, y):
             networks[i].J = networks[0].J.copy()
     loggers = [HopfieldLogger(reference_state=net.state) for net in networks]
@@ -129,9 +138,13 @@ def simulate_replicated_net(
         loggers=loggers,
         ensemble_logger=similarities_logger,
         k=k,
+        chained=chained,
         log_interval=log_interval,
         check_convergence_interval=check_convergence_interval,
         anneal_k=anneal_k,
+        left_field=left_field,
+        right_field=right_field,
+        h=h,
     )
     logging.info(msg="============ Running simulation ============")
     simulation.run(max_steps=max_steps, rng=rng)

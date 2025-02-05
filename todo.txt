@@ -1,14 +1,2 @@
 TODO:
-- implement replicated system
-    - for simplicity, make an independent submodule replicated in src
-      to handle the simulation
-    - maybe have a way to 'export' replicas as HopfieldNetwork objects
-      from single_net. This way, post-convergence analysis can be shared.
-    - try to cover both chain interaction and clique interaction between
-      replicas with a single implementation! Only difference is in local
-      field computation...
-
-LATER:
-- simplify implementation of single_net submodule?
-  - it's arguably too abstract. e.g. stopping condition object is ridiculous.
-  - however, multi_net will likely supersede it --> wasted effort...
+- explore learning
