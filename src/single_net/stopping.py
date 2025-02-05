@@ -27,9 +27,7 @@ class SimpleStoppingCondition(BaseStoppingCondition):
     Simple stopping condition based on maximum iterations and stability.
     """
 
-    def __init__(
-        self, max_iterations: int, check_convergence_interval: int = 1000
-    ) -> None:
+    def __init__(self, max_steps: int, check_convergence_interval: int = 1000) -> None:
         """
         Parameters
         ----------
@@ -38,7 +36,7 @@ class SimpleStoppingCondition(BaseStoppingCondition):
         stable_steps_needed : int
             Number of consecutive update steps without changes to declare stability.
         """
-        self.max_iterations = max_iterations
+        self.max_steps = max_steps
         self.check_convergence_interval = check_convergence_interval
         self.iteration_count = 0
 
@@ -58,4 +56,4 @@ class SimpleStoppingCondition(BaseStoppingCondition):
         if self.iteration_count % self.check_convergence_interval == 0:
             if network.is_fixed_point():
                 return True
-        return self.iteration_count >= self.max_iterations
+        return self.iteration_count >= self.max_steps

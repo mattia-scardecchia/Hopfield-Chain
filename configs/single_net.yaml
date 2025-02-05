@@ -1,16 +1,6 @@
 defaults:
   - /hydra@_here_
-
-name: prova
-
-simulation:
-  N: 1000     
-  J_D: 0.7                 
-  symmetric: false     
-  max_iterations: 1000000
-  check_convergence_interval: 10000
-  log_interval: 10000
-  seed: 0
+  - base
 
 stability:
   skip: false

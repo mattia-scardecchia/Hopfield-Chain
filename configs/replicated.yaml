@@ -1,16 +1,9 @@
 defaults:
   - /hydra@_here_
+  - base
 
-name: prova
-
-simulation:
-  N: 1000     
-  J_D: 0.7                 
-  symmetric: false     
-  same_couplings: true
-  y: 5
-  k: 0.0
-  max_iterations: 1000000
-  check_convergence_interval: 1000
-  log_interval: 1000
-  seed: 42
+simulation:               
+  same_couplings: true  # if true, replicas share J
+  y: 5                  # number of replicas
+  k: 0.2                # strength of coupling between replicas
+  anneal_k: null         # if null, no annealing

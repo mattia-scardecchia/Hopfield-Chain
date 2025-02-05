@@ -26,7 +26,7 @@ def main(cfg: DictConfig):
         N=cfg.simulation.N,
         symmetric=cfg.simulation.symmetric,
         J_D=cfg.simulation.J_D,
-        max_iterations=cfg.simulation.max_iterations,
+        max_steps=cfg.simulation.max_steps,
         log_interval=cfg.simulation.log_interval,
         check_convergence_interval=cfg.simulation.check_convergence_interval,
         seed=cfg.simulation.seed,

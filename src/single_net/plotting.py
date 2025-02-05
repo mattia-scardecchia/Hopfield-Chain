@@ -68,11 +68,9 @@ class HopfieldPlotter:
             y_values=self.unsatisfied,
             color="black",
             ylabel="Unsat neurons",
-            title="Unsat neurons vs. Step",
+            title="Unsat vs. Step",
         )
-        axes[0, 0].set_title(
-            "Unsat neurons vs. Step (final: {})".format(self.unsatisfied[-1])
-        )
+        axes[0, 0].set_title("Unsat vs. Step (final: {})".format(self.unsatisfied[-1]))
         self._plot_metric(
             ax=axes[0, 1],
             y_values=self.magnetizations,

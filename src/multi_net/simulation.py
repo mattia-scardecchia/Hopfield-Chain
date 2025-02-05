@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 import numpy as np
+from tqdm import tqdm
 
 from src.multi_net.ensemble import HopfieldEnsemble
 from src.multi_net.logging import EnsembleLogger
@@ -12,8 +13,6 @@ from src.network.initializer import (
 )
 from src.network.logging import HopfieldLogger
 from src.network.network import HopfieldNetwork
-
-# TODO: allow annealing of k
 
 
 class ReplicatedHopfieldSimulation:
@@ -26,6 +25,7 @@ class ReplicatedHopfieldSimulation:
         chained: bool = False,
         log_interval: int = 1000,
         check_convergence_interval: int = 1000,
+        anneal_k: Optional[float] = None,
     ) -> None:
         self.ensemble = HopfieldEnsemble(networks, k, chained)
         self.networks = self.ensemble.networks  # for convenience
@@ -34,6 +34,7 @@ class ReplicatedHopfieldSimulation:
         self.chained = chained
         self.log_interval = log_interval
         self.check_convergence_interval = check_convergence_interval
+        self.anneal_k = anneal_k
 
         self.y = len(networks)
         self.N = networks[0].N
@@ -47,24 +48,44 @@ class ReplicatedHopfieldSimulation:
         local_field = self.ensemble.local_field(replica_idx, neuron_idx)
         self.networks[replica_idx].state[neuron_idx] = np.sign(local_field)
 
+    def end_run(self, step):
+        if step % self.log_interval != 0:
+            self.log_step(step)
+
     def run(self, max_steps: int, rng: Optional[np.random.Generator] = None):
         step = 0
+        pbar = tqdm(total=max_steps)
         if rng is None:
             rng = np.random.default_rng()
+
         while True:
+            # step and log
             for replica_idx in range(self.y):
                 neuron_idx = rng.integers(self.N)
                 self.update_step(replica_idx, neuron_idx)
             if step % self.log_interval == 0:
                 self.log_step(step)
+
+            # handle convergence
             if (
                 step % self.check_convergence_interval == 0
                 and self.ensemble.check_convergence()
-            ) or step >= max_steps:
-                if step % self.log_interval != 0:
-                    self.log_step(step)
+            ):
+                if self.anneal_k:
+                    self.ensemble.k *= self.anneal_k
+                else:
+                    self.end_run(step)
+                    break
+
+            # handle max steps
+            if step >= max_steps:
+                self.end_run(step)
                 break
+
             step += 1
+            pbar.update(1)
+
+        pbar.close()
         return [net.state.copy() for net in self.networks]
 
 
@@ -75,10 +96,11 @@ def simulate_replicated_net(
     same_couplings: bool,
     y: int,
     k: float,
-    max_iterations: int,
+    max_steps: int,
     log_interval: int,
     check_convergence_interval: int,
     seed: int,
+    anneal_k: Optional[float] = None,
 ):
     rng = np.random.default_rng(seed)
     coupling_initializer = (
@@ -109,7 +131,8 @@ def simulate_replicated_net(
         k=k,
         log_interval=log_interval,
         check_convergence_interval=check_convergence_interval,
+        anneal_k=anneal_k,
     )
     logging.info(msg="============ Running simulation ============")
-    simulation.run(max_steps=max_iterations, rng=rng)
+    simulation.run(max_steps=max_steps, rng=rng)
     return simulation

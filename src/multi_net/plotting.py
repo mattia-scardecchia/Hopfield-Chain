@@ -40,7 +40,7 @@ class ReplicatedPlotter:
             ax.plot(steps, [u[i] for u in unsat], label=f"Replica {i}")
         ax.set_ylabel("Unsat Neurons")
         ax.set_xlabel("Step")
-        ax.set_title("Unsat Neurons with Replica Interaction vs. Step")
+        ax.set_title("Unsat with Replica Interaction vs. Step")
         ax.grid(True, linestyle="--", alpha=0.6)
 
     def _plot_replicas_similarity(self, ax: plt.Axes):
@@ -61,7 +61,13 @@ class ReplicatedPlotter:
             axes[0, 2],
             self.individual_logs["unsat"],
             "Unsat Neurons",
-            "Unsat Neurons vs. Step",
+            "Unsat vs. Step",
+        )
+        unsat_final = self.individual_logs["unsat"][:, -1]
+        num_fixed_replicas = np.sum(unsat_final == 0)
+        avg_unat_final = np.mean(unsat_final)
+        axes[0, 2].set_title(
+            f"Unsat vs. Step. {num_fixed_replicas}/{len(unsat_final)} converged, avg unsat: {avg_unat_final:.2f}"
         )
         self._plot_metric_individually(
             axes[1, 0],

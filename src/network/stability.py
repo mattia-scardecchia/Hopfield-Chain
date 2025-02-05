@@ -26,7 +26,7 @@ def analyze_local_stability_full(
 
         logger = HopfieldLogger(reference_state=initial_state)
         stopping_condition = SimpleStoppingCondition(
-            max_iterations=num_steps,
+            max_steps=num_steps,
             check_convergence_interval=check_convergence_interval,
         )
         simulation = HopfieldSimulation(

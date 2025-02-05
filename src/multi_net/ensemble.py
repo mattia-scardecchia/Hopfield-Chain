@@ -4,6 +4,8 @@ import numpy as np
 
 from src.network.network import HopfieldNetwork
 
+# TODO: maintain a baricenter with state components given by a majority vote of replicas?
+
 
 class HopfieldEnsemble:
     def __init__(self, networks: List[HopfieldNetwork], k: float, chained: bool):

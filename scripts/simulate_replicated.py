@@ -20,10 +20,11 @@ def main(cfg):
         same_couplings=cfg.simulation.same_couplings,
         y=cfg.simulation.y,
         k=cfg.simulation.k,
-        max_iterations=cfg.simulation.max_iterations,
+        max_steps=cfg.simulation.max_steps,
         log_interval=cfg.simulation.log_interval,
         check_convergence_interval=cfg.simulation.check_convergence_interval,
         seed=cfg.simulation.seed,
+        anneal_k=cfg.simulation.anneal_k,
     )
     plotter = ReplicatedPlotter(simulation.loggers, simulation.ensemble_logger)
 

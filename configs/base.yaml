@@ -1,0 +1,10 @@
+name: prova
+
+simulation:
+  N: 1000                   # number of neurons
+  J_D: 0.6                  # self-coupling strength
+  symmetric: false          # if true, J matrix is symmetric
+  max_steps: 1000000
+  check_convergence_interval: 10000
+  log_interval: 10000
+  seed: 0

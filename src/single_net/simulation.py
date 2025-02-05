@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+from tqdm import tqdm
 
 from src.network.initializer import (
     AsymmetricCoupling,
@@ -54,6 +55,7 @@ class HopfieldSimulation:
         """
         self.stopping_condition.reset()
         step = 0
+        pbar = tqdm()
         while True:
             _ = self.dynamics.update_step(self.network)
             if self.logger and step % self.log_interval == 0:
@@ -63,6 +65,8 @@ class HopfieldSimulation:
                     self.logger.log_step(self.network, step)
                 break
             step += 1
+            pbar.update(1)
+        pbar.close()
         return self.network.state.copy()
 
 
@@ -70,7 +74,7 @@ def simulate_single_net(
     N: int,
     symmetric: bool,
     J_D: float,
-    max_iterations: int,
+    max_steps: int,
     log_interval: int,
     check_convergence_interval: int,
     seed: int,
@@ -96,7 +100,7 @@ def simulate_single_net(
     )
     dynamics = AsynchronousDeterministicUpdate(rng=rng)
     stopping_condition = SimpleStoppingCondition(
-        max_iterations=max_iterations,
+        max_steps=max_steps,
         check_convergence_interval=check_convergence_interval,
     )
 
