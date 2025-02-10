@@ -13,7 +13,7 @@ class EnsembleLogger:
     def log_step(self, ensemble: HopfieldEnsemble, step: int) -> None:
         self.logs["steps"].append(step)
         y, networks = ensemble.y, ensemble.networks
-        sims = np.empty((y, y))
+        sims = np.zeros((y, y))
         for i in range(y):
             for j in range(i + 1, y):
                 sims[i, j] = networks[i].state_similarity(networks[j].state)

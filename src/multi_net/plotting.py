@@ -1,8 +1,11 @@
+import logging
+import os
 from typing import List
 
 import numpy as np
 from matplotlib import pyplot as plt
 
+from src.multi_net.ensemble import HopfieldEnsemble, collect_field_breakdowns
 from src.multi_net.logging import EnsembleLogger
 from src.network.logging import HopfieldLogger
 
@@ -47,12 +50,12 @@ class ReplicatedPlotter:
 
     def _plot_replicas_similarity(self, ax: plt.Axes):
         logs = self.similarities_logger.get_logs()
-        ax.plot(logs["steps"], logs["avg_similarity"], color="blue", label="global")
+        ax.plot(logs["steps"], logs["avg_similarity"], color="blue", label="all pairs")
         ax.plot(
             logs["steps"],
             logs["avg_pairwise_similarity"],
             color="red",
-            label="pairwise",
+            label="subsequent pairs",
         )
         ax.set_ylabel("Average Similarity")
         ax.set_xlabel("Step")
@@ -90,6 +93,7 @@ class ReplicatedPlotter:
             "Magnetization",
             "Magnetization vs. Step",
         )
+        axes[1, 1].legend()
         self._plot_metric_individually(
             axes[1, 2],
             self.individual_logs["pseudo_energy"],
@@ -98,3 +102,140 @@ class ReplicatedPlotter:
         )
         plt.tight_layout()
         return fig
+
+
+def plot_similarity_heatmap(ensemble: HopfieldEnsemble):
+    y, networks = ensemble.y, ensemble.networks
+    sims = np.empty((y, y))
+    for i in range(y):
+        for j in range(y):
+            sims[i, j] = networks[i].state_similarity(networks[j].state)
+    fig, ax = plt.subplots()
+    cax = ax.matshow(sims, cmap="seismic", vmin=0, vmax=1)
+    fig.colorbar(cax)
+    ax.set_title("State Similarity Heatmap")
+    ax.set_xlabel("Replica")
+    ax.set_ylabel("Replica")
+    return fig
+
+
+def plot_field_breakdowns(breakdowns: dict, weighted: bool = False):
+    """
+    compute the average of the internal, interaction, and external fields for each layer.
+    Plot the results in a bar chart: one bar for each field type, showing the internal,
+    interaction, and external fields as stacked bars (absolute values).
+    """
+    fig, ax = plt.subplots()
+    keys = (
+        ["internal", "interaction", "external"]
+        if not weighted
+        else [
+            "internal_weighted",
+            "interaction_weighted",
+            "external_weighted",
+        ]
+    )
+    colors = ["blue", "red", "black"]
+
+    means = {
+        idx: [np.mean(np.abs(breakdowns[idx][key])) for key in keys]
+        for idx in breakdowns
+    }
+    stds = {
+        idx: [np.std(np.abs(breakdowns[idx][key])) for key in keys]
+        for idx in breakdowns
+    }
+    for i, key in enumerate(keys):
+        ax.bar(
+            list(means.keys()),
+            [means[idx][i] for idx in means],
+            # yerr=[stds[idx][i] for idx in stds],
+            capsize=5,
+            label=key,
+            bottom=[sum([means[idx][j] for j in range(i)]) for idx in means],
+            color=colors[i],
+        )
+
+    ax.set_ylabel("Field value")
+    ax.set_title("Average local field breakdown for each layer (absolute values)")
+    ax.legend()
+    ax.grid(axis="y")
+    return fig
+
+
+def total_field_histograms(breakdowns: dict):
+    """
+    For each layer, plot a histogram of the total field.
+    """
+    fig, axes = plt.subplots(1, len(breakdowns), figsize=(20, 5), sharey=True)
+    for i, ax in enumerate(axes):
+        ax.hist(
+            breakdowns[i]["total"],
+            bins=30,
+            color="skyblue",
+            alpha=0.7,
+        )
+        ax.set_title(f"Layer {i}")
+        ax.grid(True, linestyle="--", alpha=0.6)
+    fig.suptitle(
+        f"Histogram of local field in each layer ({len(breakdowns[0]['total'])} neurons)"
+    )
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    return fig
+
+
+def plot_replicated(ensemble: HopfieldEnsemble, output_dir: str, id: str = ""):
+    fig2 = plot_similarity_heatmap(ensemble)
+    fig2_path = os.path.join(output_dir, f"similarity_heatmap{id}.png")
+    fig2.savefig(fig2_path)
+    plt.close(fig2)
+    logging.info(f"Similarity heatmap saved to {fig2_path}")
+
+    breakdown = collect_field_breakdowns(ensemble, n=-1)
+    fig3 = plot_field_breakdowns(breakdown, weighted=True)
+    fig3_path = os.path.join(output_dir, f"weighted_field_breakdown{id}.png")
+    fig3.savefig(fig3_path)
+    plt.close(fig3)
+    logging.info(f"Weighted field breakdown saved to {fig3_path}")
+    fig4 = plot_field_breakdowns(breakdown, weighted=False)
+    fig4_path = os.path.join(output_dir, f"field_breakdown{id}.png")
+    fig4.savefig(fig4_path)
+    plt.close(fig4)
+    logging.info(f"Field breakdown saved to {fig4_path}")
+
+    fig, axes = plt.subplots(1, ensemble.y, figsize=(20, 5), sharey=True)
+    for i, ax in enumerate(axes):
+        ax.hist(ensemble.networks[i].J.flatten(), bins=30, color="skyblue", alpha=0.7)
+        ax.set_title(f"Layer {i}")
+        ax.grid(True, linestyle="--", alpha=0.6)
+    fig.suptitle("Couplings Histogram in each layer")
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig_path = os.path.join(output_dir, f"couplings_histogram{id}.png")
+    fig.savefig(fig_path)
+    plt.close(fig)
+    logging.info(f"Couplings histogram saved to {fig_path}")
+
+    fig, axes = plt.subplots(1, ensemble.y, figsize=(20, 5), sharey=True)
+    for i, ax in enumerate(axes):
+        ax.hist(
+            ensemble.networks[i].all_pairs_energy().flatten(),
+            bins=30,
+            color="skyblue",
+            alpha=0.7,
+        )
+        ax.set_title(f"Layer {i}")
+        ax.grid(True, linestyle="--", alpha=0.6)
+    fig.suptitle(
+        "Histogram of interaction pseudo-energy between neuron pairs in each layer"
+    )
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig_path = os.path.join(output_dir, f"energy_pairs_histogram{id}.png")
+    fig.savefig(fig_path)
+    plt.close(fig)
+    logging.info(f"Energy pairs histogram saved to {fig_path}")
+
+    fig5 = total_field_histograms(breakdown)
+    fig5_path = os.path.join(output_dir, f"total_field_histogram{id}.png")
+    fig5.savefig(fig5_path)
+    plt.close(fig5)
+    logging.info(f"Total field histogram saved to {fig5_path}")

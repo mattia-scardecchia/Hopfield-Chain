@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List, Optional
 
 import numpy as np
@@ -72,3 +73,48 @@ class HopfieldEnsemble:
 
     def check_convergence(self) -> bool:
         return self.num_unsatisfied_neurons_with_replicas_interaction() == [0] * self.y
+
+    def get_local_field_breakdown(self, replica_idx: int, neuron_idx: int) -> dict:
+        internal_field = self.networks[replica_idx].local_field(neuron_idx)
+        interaction_field = (
+            sum(
+                [
+                    self.networks[i].state[neuron_idx]
+                    for i in self.neighbors[replica_idx]
+                ]
+            )
+            / self.scale
+        )
+        external_field = 0.0
+        if replica_idx == 0 and self.left_field is not None:
+            external_field = self.left_field[neuron_idx]
+        if replica_idx == self.y - 1 and self.right_field is not None:
+            external_field = self.right_field[neuron_idx]
+
+        return {
+            "internal": internal_field,
+            "interaction": interaction_field,
+            "external": external_field,
+            "internal_weighted": internal_field,
+            "interaction_weighted": self.k * interaction_field,
+            "external_weighted": self.h * external_field,
+            "total": internal_field
+            + self.k * interaction_field
+            + self.h * external_field,
+        }
+
+
+def collect_field_breakdowns(ensemble: HopfieldEnsemble, n: int):
+    """
+    For each layer, sample n neurons and get their local field breakdown. Return a dictionary
+    with the breakdowns for each layer: replica_idx -> field_type -> list of values.
+    """
+
+    breakdowns = defaultdict(lambda: defaultdict(list))
+    for replica_idx in range(ensemble.y):
+        idxs = np.random.choice(ensemble.N, n) if n != -1 else range(ensemble.N)
+        for neuron_idx in idxs:
+            breakdown = ensemble.get_local_field_breakdown(replica_idx, neuron_idx)
+            for key, value in breakdown.items():
+                breakdowns[replica_idx][key].append(value)
+    return breakdowns

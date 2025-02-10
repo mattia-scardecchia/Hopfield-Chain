@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import List, Optional
 
 import numpy as np
@@ -6,6 +7,7 @@ from tqdm import tqdm
 
 from src.multi_net.ensemble import HopfieldEnsemble
 from src.multi_net.logging import EnsembleLogger
+from src.multi_net.plotting import plot_replicated
 from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,
@@ -110,6 +112,7 @@ def simulate_replicated_net(
     left_field: Optional[np.ndarray] = None,
     right_field: Optional[np.ndarray] = None,
     h: float = 0.0,
+    output_dir: str = ".",
 ):
     rng = np.random.default_rng(seed)
     coupling_initializer = (
@@ -146,6 +149,8 @@ def simulate_replicated_net(
         right_field=right_field,
         h=h,
     )
+    os.makedirs(os.path.join(output_dir, "initial"), exist_ok=True)
+    plot_replicated(simulation.ensemble, os.path.join(output_dir, "initial"), id="")
     logging.info(msg="============ Running simulation ============")
     simulation.run(max_steps=max_steps, rng=rng)
     return simulation
