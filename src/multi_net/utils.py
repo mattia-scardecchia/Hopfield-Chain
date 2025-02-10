@@ -31,5 +31,5 @@ def plot_replicated_after_simulation(
     plt.close(fig1)
     logging.info(f"Simulation plot saved to {fig1_path}")
 
-    os.makedirs(os.path.join(output_dir, "final"), exist_ok=True)
-    plot_replicated(simulation.ensemble, os.path.join(output_dir, "final"), id=id)
+    os.makedirs(os.path.join(output_dir, f"final{id}"), exist_ok=True)
+    plot_replicated(simulation.ensemble, os.path.join(output_dir, f"final{id}"))

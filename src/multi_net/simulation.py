@@ -150,7 +150,7 @@ def simulate_replicated_net(
         h=h,
     )
     os.makedirs(os.path.join(output_dir, "initial"), exist_ok=True)
-    plot_replicated(simulation.ensemble, os.path.join(output_dir, "initial"), id="")
+    plot_replicated(simulation.ensemble, os.path.join(output_dir, "initial"))
     logging.info(msg="============ Running simulation ============")
     simulation.run(max_steps=max_steps, rng=rng)
     return simulation

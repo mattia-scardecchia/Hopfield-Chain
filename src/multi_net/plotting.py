@@ -184,21 +184,21 @@ def total_field_histograms(breakdowns: dict):
     return fig
 
 
-def plot_replicated(ensemble: HopfieldEnsemble, output_dir: str, id: str = ""):
+def plot_replicated(ensemble: HopfieldEnsemble, output_dir: str):
     fig2 = plot_similarity_heatmap(ensemble)
-    fig2_path = os.path.join(output_dir, f"similarity_heatmap{id}.png")
+    fig2_path = os.path.join(output_dir, "similarity_heatmap.png")
     fig2.savefig(fig2_path)
     plt.close(fig2)
     logging.info(f"Similarity heatmap saved to {fig2_path}")
 
     breakdown = collect_field_breakdowns(ensemble, n=-1)
     fig3 = plot_field_breakdowns(breakdown, weighted=True)
-    fig3_path = os.path.join(output_dir, f"weighted_field_breakdown{id}.png")
+    fig3_path = os.path.join(output_dir, "weighted_field_breakdown.png")
     fig3.savefig(fig3_path)
     plt.close(fig3)
     logging.info(f"Weighted field breakdown saved to {fig3_path}")
     fig4 = plot_field_breakdowns(breakdown, weighted=False)
-    fig4_path = os.path.join(output_dir, f"field_breakdown{id}.png")
+    fig4_path = os.path.join(output_dir, "field_breakdown.png")
     fig4.savefig(fig4_path)
     plt.close(fig4)
     logging.info(f"Field breakdown saved to {fig4_path}")
@@ -210,7 +210,7 @@ def plot_replicated(ensemble: HopfieldEnsemble, output_dir: str, id: str = ""):
         ax.grid(True, linestyle="--", alpha=0.6)
     fig.suptitle("Couplings Histogram in each layer")
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fig_path = os.path.join(output_dir, f"couplings_histogram{id}.png")
+    fig_path = os.path.join(output_dir, "couplings_histogram.png")
     fig.savefig(fig_path)
     plt.close(fig)
     logging.info(f"Couplings histogram saved to {fig_path}")
@@ -229,13 +229,13 @@ def plot_replicated(ensemble: HopfieldEnsemble, output_dir: str, id: str = ""):
         "Histogram of interaction pseudo-energy between neuron pairs in each layer"
     )
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    fig_path = os.path.join(output_dir, f"energy_pairs_histogram{id}.png")
+    fig_path = os.path.join(output_dir, "energy_pairs_histogram.png")
     fig.savefig(fig_path)
     plt.close(fig)
     logging.info(f"Energy pairs histogram saved to {fig_path}")
 
     fig5 = total_field_histograms(breakdown)
-    fig5_path = os.path.join(output_dir, f"total_field_histogram{id}.png")
+    fig5_path = os.path.join(output_dir, "total_field_histogram.png")
     fig5.savefig(fig5_path)
     plt.close(fig5)
     logging.info(f"Total field histogram saved to {fig5_path}")

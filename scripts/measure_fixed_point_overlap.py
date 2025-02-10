@@ -22,7 +22,6 @@ def main(cfg):
     right_field = parse_external_field(cfg.simulation.right_field, N)
 
     seeds = range(10)
-    seeds = [1]
     final_states = defaultdict(list)
 
     for seed in seeds:
@@ -42,6 +41,7 @@ def main(cfg):
             left_field=left_field,
             right_field=right_field,
             h=cfg.simulation.h,
+            output_dir=output_dir,
         )
         for idx, net in enumerate(simulation.networks):
             final_states[idx].append(net.state.copy())
