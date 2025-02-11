@@ -24,31 +24,24 @@ from src.network.network import HopfieldNetwork
 class ReplicatedHopfieldSimulation:
     def __init__(
         self,
-        networks: List[HopfieldNetwork],
+        ensemble: HopfieldEnsemble,
         loggers: List[HopfieldLogger],
         ensemble_logger: EnsembleLogger,
-        k: float,
-        chained: bool = False,
         log_interval: int = 1000,
         check_convergence_interval: int = 1000,
-        left_field: Optional[np.ndarray] = None,
-        right_field: Optional[np.ndarray] = None,
-        h: float = 0.0,
         on_convergence_callbacks: list = [],
     ) -> None:
-        self.ensemble = HopfieldEnsemble(
-            networks, k, chained, left_field, right_field, h=h
-        )
-        self.networks = self.ensemble.networks  # for convenience
+        self.ensemble = ensemble
+        self.networks = self.ensemble.networks
+        self.chained = ensemble.chained
+        self.y = len(self.networks)
+        self.N = self.networks[0].N
+
         self.loggers = loggers
         self.ensemble_logger = ensemble_logger
-        self.chained = chained
         self.log_interval = log_interval
         self.check_convergence_interval = check_convergence_interval
         self.on_convergence_callbacks = on_convergence_callbacks
-
-        self.y = len(networks)
-        self.N = networks[0].N
 
     def log_step(self, step: int):
         for i, logger in enumerate(self.loggers):
@@ -59,20 +52,16 @@ class ReplicatedHopfieldSimulation:
         local_field = self.ensemble.local_field(replica_idx, neuron_idx)
         self.networks[replica_idx].state[neuron_idx] = np.sign(local_field)
 
-    def end_run(self, step):
-        if step % self.log_interval != 0:
-            self.log_step(step)
-
-    def run(self, max_steps: int, rng: Optional[np.random.Generator] = None):
-        step = 0
-        pbar = tqdm(total=max_steps)
-        if rng is None:
-            rng = np.random.default_rng()
-
+    def relax(self, step: int, max_steps: int, rng: np.random.Generator, pbar):
+        converged = False
+        logging.info("Relaxing to fixed point...")
+        self.log_step(step)  # log initial conditions
         while True:
             for replica_idx in range(self.y):
                 neuron_idx = rng.integers(self.N)
                 self.update_step(replica_idx, neuron_idx)
+            step += 1
+            pbar.update(1)
             if step % self.log_interval == 0:
                 self.log_step(step)
 
@@ -80,24 +69,37 @@ class ReplicatedHopfieldSimulation:
                 step % self.check_convergence_interval == 0
                 and self.ensemble.check_convergence()
             ):
-                self.ensemble_logger.log_fixed_point(self.ensemble)
-                if self.on_convergence_callbacks:
-                    can_break = True
-                    for callback in self.on_convergence_callbacks:
-                        can_break = (
-                            callback(self.ensemble, self.loggers, step) and can_break
-                        )
-                    if can_break:
-                        break
-                else:
-                    break
+                converged = True
+                break
             if step >= max_steps:
                 break
 
-            step += 1
-            pbar.update(1)
+        if step % self.log_interval != 0:
+            self.log_step(step)
+        return step, converged
 
-        self.end_run(step)
+    def run_dynamics_with_callbacks(
+        self, max_steps: int, rng: Optional[np.random.Generator] = None
+    ):
+        step = 0
+        logging.info("Running dynamics with callbacks...")
+        pbar = tqdm(total=max_steps)
+        if rng is None:
+            rng = np.random.default_rng()
+
+        while True:
+            step, converged = self.relax(step, max_steps, rng, pbar)
+            if not converged:
+                assert step == max_steps, f"step: {step}, max_steps: {max_steps}"
+                break
+
+            self.ensemble_logger.log_fixed_point(self.ensemble)
+            can_break = True
+            for callback in self.on_convergence_callbacks:
+                can_break = callback(self.ensemble, self.loggers, step) and can_break
+            if can_break:
+                break
+
         pbar.close()
         return [net.state.copy() for net in self.networks]
 
@@ -155,21 +157,18 @@ def simulate_replicated_net(
             )
         )
 
+    ensemble = HopfieldEnsemble(networks, k, chained, left_field, right_field, h=h)
+
     simulation = ReplicatedHopfieldSimulation(
-        networks=networks,
+        ensemble=ensemble,
         loggers=loggers,
         ensemble_logger=similarities_logger,
-        k=k,
-        chained=chained,
         log_interval=log_interval,
         check_convergence_interval=check_convergence_interval,
-        left_field=left_field,
-        right_field=right_field,
-        h=h,
         on_convergence_callbacks=callbacks,
     )
     os.makedirs(os.path.join(output_dir, f"initial{id}"), exist_ok=True)
     plot_replicated(simulation.ensemble, os.path.join(output_dir, f"initial{id}"))
     logging.info(msg="============ Running simulation ============")
-    simulation.run(max_steps=max_steps, rng=rng)
+    simulation.run_dynamics_with_callbacks(max_steps=max_steps, rng=rng)
     return simulation

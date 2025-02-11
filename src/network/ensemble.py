@@ -60,6 +60,16 @@ class HopfieldEnsemble:
 
         return total_field
 
+    def local_field_from_external_field_pov(
+        self, component_idx: int, right: bool = True
+    ) -> float:
+        """
+        For inference with a trained classifer. Compute the local field
+        from the perspective of the external field, as if it were neurons.
+        """
+        net_idx = self.y - 1 if right else 0
+        return self.h * self.networks[net_idx].state[component_idx]
+
     def num_unsatisfied_neurons_with_replicas_interaction(self) -> List[int]:
         nums = []
         for replica_idx, network in enumerate(self.networks):

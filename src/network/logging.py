@@ -22,6 +22,7 @@ class HopfieldLogger:
         """
         self.reference_state = reference_state.copy()
         self.logs = defaultdict(list)
+        self.logs["init_steps"] = [0]
 
     def log_step(self, network: HopfieldNetwork, step: int) -> None:
         """

@@ -26,6 +26,8 @@ class EnsembleLogger:
             ensemble.num_unsatisfied_neurons_with_replicas_interaction()
         )
 
+    # TODO: this should be handled by each single HopfieldLogger!!
+    # They should track initial states and converged fixed points.
     def log_fixed_point(self, ensemble: HopfieldEnsemble) -> None:
         for i, net in enumerate(ensemble.networks):
             self.logs[f"fixed_point_{i}"].append(net.state.copy())

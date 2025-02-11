@@ -55,19 +55,21 @@ class HebbianLearningCallback:
             for net, logger in zip(ensemble.networks, loggers):
                 net.state = self.state_initializer(net.N, self.rng)  # type: ignore
                 logger.reference_state = net.state.copy()
+                logger.logs["init_steps"].append(step)
         self.step += 1
         return False
 
 
-# class InitStateCallback:
-#     def __init__(self, initializer, rng: Optional[np.random.Generator] = None):
-#         self.rng = rng if rng else np.random.default_rng()
-#         self.initializer = initializer
+class InitStateCallback:
+    def __init__(self, state_initializer, rng: Optional[np.random.Generator] = None):
+        self.rng = rng if rng else np.random.default_rng()
+        self.state_initializer = state_initializer
 
-#     def __call__(
-#         self, ensemble: HopfieldEnsemble, loggers: list[HopfieldLogger], step: int
-#     ):
-#         for net, logger in zip(ensemble.networks, loggers):
-#             net.state = self.initializer(net.N, self.rng)
-#             logger.reference_state = net.state.copy()
-#         return True
+    def __call__(
+        self, ensemble: HopfieldEnsemble, loggers: list[HopfieldLogger], step: int
+    ):
+        for net, logger in zip(ensemble.networks, loggers):
+            net.state = self.state_initializer(net.N, self.rng)
+            logger.reference_state = net.state.copy()
+            logger.logs["init_steps"].append(step)
+        return True
