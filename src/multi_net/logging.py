@@ -3,7 +3,7 @@ from typing import Dict
 
 import numpy as np
 
-from src.multi_net.ensemble import HopfieldEnsemble
+from src.network.ensemble import HopfieldEnsemble
 
 
 class EnsembleLogger:

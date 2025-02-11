@@ -9,9 +9,9 @@ from src.multi_net.callback import (
     AnnealKCallback,
     HebbianLearningCallback,
 )
-from src.multi_net.ensemble import HopfieldEnsemble
 from src.multi_net.logging import EnsembleLogger
 from src.multi_net.plotting import plot_replicated
+from src.network.ensemble import HopfieldEnsemble
 from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,

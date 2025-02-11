@@ -5,8 +5,8 @@ from typing import List
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.multi_net.ensemble import HopfieldEnsemble, collect_field_breakdowns
 from src.multi_net.logging import EnsembleLogger
+from src.network.ensemble import HopfieldEnsemble, collect_field_breakdowns
 from src.network.logging import HopfieldLogger
 
 
