@@ -31,5 +31,11 @@ def plot_replicated_after_simulation(
     plt.close(fig1)
     logging.info(f"Simulation plot saved to {fig1_path}")
 
+    fig2 = plotter.plot_fixed_points_similarity_heatmap()
+    fig2_path = os.path.join(output_dir, f"fixed_points_similarity_heatmap{id}.png")
+    fig2.savefig(fig2_path)
+    plt.close(fig2)
+    logging.info(f"Fixed points similarity heatmap saved to {fig2_path}")
+
     os.makedirs(os.path.join(output_dir, f"final{id}"), exist_ok=True)
     plot_replicated(simulation.ensemble, os.path.join(output_dir, f"final{id}"))

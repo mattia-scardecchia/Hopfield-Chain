@@ -26,5 +26,9 @@ class EnsembleLogger:
             ensemble.num_unsatisfied_neurons_with_replicas_interaction()
         )
 
+    def log_fixed_point(self, ensemble: HopfieldEnsemble) -> None:
+        for i, net in enumerate(ensemble.networks):
+            self.logs[f"fixed_point_{i}"].append(net.state.copy())
+
     def get_logs(self) -> Dict:
         return dict(self.logs)

@@ -5,6 +5,10 @@ from typing import List, Optional
 import numpy as np
 from tqdm import tqdm
 
+from src.multi_net.callback import (
+    AnnealKCallback,
+    HebbianLearningCallback,
+)
 from src.multi_net.ensemble import HopfieldEnsemble
 from src.multi_net.logging import EnsembleLogger
 from src.multi_net.plotting import plot_replicated
@@ -27,10 +31,10 @@ class ReplicatedHopfieldSimulation:
         chained: bool = False,
         log_interval: int = 1000,
         check_convergence_interval: int = 1000,
-        anneal_k: Optional[float] = None,
         left_field: Optional[np.ndarray] = None,
         right_field: Optional[np.ndarray] = None,
         h: float = 0.0,
+        on_convergence_callbacks: list = [],
     ) -> None:
         self.ensemble = HopfieldEnsemble(
             networks, k, chained, left_field, right_field, h=h
@@ -41,7 +45,7 @@ class ReplicatedHopfieldSimulation:
         self.chained = chained
         self.log_interval = log_interval
         self.check_convergence_interval = check_convergence_interval
-        self.anneal_k = anneal_k
+        self.on_convergence_callbacks = on_convergence_callbacks
 
         self.y = len(networks)
         self.N = networks[0].N
@@ -66,32 +70,34 @@ class ReplicatedHopfieldSimulation:
             rng = np.random.default_rng()
 
         while True:
-            # step and log
             for replica_idx in range(self.y):
                 neuron_idx = rng.integers(self.N)
                 self.update_step(replica_idx, neuron_idx)
             if step % self.log_interval == 0:
                 self.log_step(step)
 
-            # handle convergence
             if (
                 step % self.check_convergence_interval == 0
                 and self.ensemble.check_convergence()
             ):
-                if self.anneal_k:
-                    self.ensemble.k *= self.anneal_k
+                self.ensemble_logger.log_fixed_point(self.ensemble)
+                if self.on_convergence_callbacks:
+                    can_break = True
+                    for callback in self.on_convergence_callbacks:
+                        can_break = (
+                            callback(self.ensemble, self.loggers, step) and can_break
+                        )
+                    if can_break:
+                        break
                 else:
-                    self.end_run(step)
                     break
-
-            # handle max steps
             if step >= max_steps:
-                self.end_run(step)
                 break
 
             step += 1
             pbar.update(1)
 
+        self.end_run(step)
         pbar.close()
         return [net.state.copy() for net in self.networks]
 
@@ -112,7 +118,9 @@ def simulate_replicated_net(
     left_field: Optional[np.ndarray] = None,
     right_field: Optional[np.ndarray] = None,
     h: float = 0.0,
+    hebb: Optional[dict] = None,
     output_dir: str = ".",
+    id: str = "",
 ):
     rng = np.random.default_rng(seed)
     coupling_initializer = (
@@ -120,11 +128,12 @@ def simulate_replicated_net(
         if symmetric
         else AsymmetricCoupling(mean=0.0, std=1.0)
     )
+    state_initializer = binary_state_sampler
     networks = [
         HopfieldNetwork(
             N=N,
             coupling_initializer=coupling_initializer,
-            state_initializer=binary_state_sampler,
+            state_initializer=state_initializer,
             J_D=J_D,
             rng=rng,
         )
@@ -136,6 +145,16 @@ def simulate_replicated_net(
     loggers = [HopfieldLogger(reference_state=net.state) for net in networks]
     similarities_logger = EnsembleLogger()
 
+    callbacks = []
+    if anneal_k is not None:
+        callbacks.append(AnnealKCallback(anneal_k=anneal_k))
+    if hebb and not hebb["skip"]:
+        callbacks.append(
+            HebbianLearningCallback(
+                state_initilizer=state_initializer, **hebb["params"]
+            )
+        )
+
     simulation = ReplicatedHopfieldSimulation(
         networks=networks,
         loggers=loggers,
@@ -144,13 +163,13 @@ def simulate_replicated_net(
         chained=chained,
         log_interval=log_interval,
         check_convergence_interval=check_convergence_interval,
-        anneal_k=anneal_k,
         left_field=left_field,
         right_field=right_field,
         h=h,
+        on_convergence_callbacks=callbacks,
     )
-    os.makedirs(os.path.join(output_dir, "initial"), exist_ok=True)
-    plot_replicated(simulation.ensemble, os.path.join(output_dir, "initial"))
+    os.makedirs(os.path.join(output_dir, f"initial{id}"), exist_ok=True)
+    plot_replicated(simulation.ensemble, os.path.join(output_dir, f"initial{id}"))
     logging.info(msg="============ Running simulation ============")
     simulation.run(max_steps=max_steps, rng=rng)
     return simulation

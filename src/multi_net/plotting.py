@@ -103,6 +103,31 @@ class ReplicatedPlotter:
         plt.tight_layout()
         return fig
 
+    def plot_fixed_points_similarity_heatmap(self):
+        """
+        For each layer, plot the similarity between the fixed points logged in
+        the EnsembleLogger as a heatmap.
+        """
+        fig, axes = plt.subplots(1, self.y, figsize=(30, 10))
+        logs = self.similarities_logger.get_logs()
+        for i, ax in enumerate(axes):
+            fixed_points = logs[f"fixed_point_{i}"]
+            T = len(fixed_points)
+            sims = np.zeros((T, T))
+            for t in range(T):
+                for s in range(T):
+                    sims[t, s] = np.mean(fixed_points[t] == fixed_points[s])
+            cax = ax.matshow(sims, cmap="seismic", vmin=0, vmax=1)
+            fig.colorbar(cax, ax=ax)
+            avg = (np.sum(sims) - np.trace(sims)) / (T**2 - T)
+            ax.set_title(
+                f"Heatmap of Fixed Point Similarity in time - Layer {i}.\nOff-diagonal avg: {avg:.2f}."
+            )
+            ax.set_xlabel("Step")
+            ax.set_ylabel("Step")
+        fig.tight_layout()
+        return fig
+
 
 def plot_similarity_heatmap(ensemble: HopfieldEnsemble):
     y, networks = ensemble.y, ensemble.networks

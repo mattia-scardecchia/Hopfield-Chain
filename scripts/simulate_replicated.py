@@ -7,9 +7,7 @@ from src.multi_net.simulation import simulate_replicated_net
 from src.multi_net.utils import parse_external_field, plot_replicated_after_simulation
 
 
-@hydra.main(
-    config_path="../configs/replicated", config_name="replicated", version_base="1.3"
-)
+@hydra.main(config_path="../configs/replicated", config_name="base", version_base="1.3")
 def main(cfg):
     output_dir = HydraConfig.get().runtime.output_dir
     N = cfg.simulation.N
@@ -32,6 +30,7 @@ def main(cfg):
         right_field=right_field,
         h=cfg.simulation.h,
         output_dir=output_dir,
+        hebb=cfg.simulation.hebb,
     )
     plot_replicated_after_simulation(simulation, output_dir)
 

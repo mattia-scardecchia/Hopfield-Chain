@@ -12,7 +12,7 @@ from src.multi_net.utils import parse_external_field, plot_replicated_after_simu
 
 
 @hydra.main(
-    config_path="../configs/replicated", config_name="replicated", version_base="1.3"
+    config_path="../configs/replicated", config_name="overlap", version_base="1.3"
 )
 def main(cfg):
     output_dir = HydraConfig.get().runtime.output_dir
@@ -20,11 +20,9 @@ def main(cfg):
     N = cfg.simulation.N
     left_field = parse_external_field(cfg.simulation.left_field, N)
     right_field = parse_external_field(cfg.simulation.right_field, N)
-
-    seeds = range(10)
     final_states = defaultdict(list)
 
-    for seed in seeds:
+    for seed in cfg.seeds:
         simulation = simulate_replicated_net(
             N=N,
             symmetric=cfg.simulation.symmetric,
@@ -36,12 +34,14 @@ def main(cfg):
             max_steps=cfg.simulation.max_steps,
             log_interval=cfg.simulation.log_interval,
             check_convergence_interval=cfg.simulation.check_convergence_interval,
-            seed=seed,  # ignore config seed
+            seed=seed,
             anneal_k=cfg.simulation.anneal_k,
             left_field=left_field,
             right_field=right_field,
             h=cfg.simulation.h,
             output_dir=output_dir,
+            hebb=cfg.simulation.hebb,
+            id=f"_{seed}",
         )
         for idx, net in enumerate(simulation.networks):
             final_states[idx].append(net.state.copy())
@@ -65,7 +65,7 @@ def main(cfg):
     ax.axhline(y=0.5, color="grey", linestyle="--")
     ax.set_xlabel("Network index")
     ax.set_ylabel("Mean overlap across seeds")
-    ax.set_title(f"Mean overlap across {len(seeds)} seeds for each layer")
+    ax.set_title(f"Mean overlap across {len(cfg.seeds)} seeds for each layer")
     ax.grid()
     fig3_path = os.path.join(output_dir, "mean_overlaps.png")
     fig3.savefig(fig3_path)
