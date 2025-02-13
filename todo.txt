@@ -1,9 +1,19 @@
 TODO:
-- learn a single pattern-label pair with hebb. Is the label retrieved by conditioning on
-  the input and letting the label evolve? If not, can we tweak inference to make it happen?
+- setup a proper traning loop with a dataset of input-label pairs
+  - enable as much logging as possible!
+  - across different train/eval steps, handle:
+    - internal state of loggers across train and eval steps
+    - state of neurons
+    - state of external fields in the ensemble
+  - monitor:
+    - couplings histogram
+    - relative size of field types
+    - accuracy on train set
+    - length of relaxation in each step
+    - (with few samples) similarity between fixed points obtained with same input-label pair
 - are we able to learn more than one pattern?
 - perceptron rule?
-    - monitor 'symmetricity' of coupling matrix
+    - monitor 'symmetricity' of coupling matrix (e.g. typical abs(J_ij - J_ji) vs typical abs(J_ij) )
 - structural changes:
   - ferromagnetic component instead of self coupling
   - 0-1 states and sparsity
