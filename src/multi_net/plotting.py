@@ -23,18 +23,43 @@ class ReplicatedPlotter:
             key: np.array([logger.get_logs()[key] for logger in loggers])
             for key in keys
         }
+        plt.style.use("tableau-colorblind10")
 
     def _plot_metric_individually(
         self, ax: plt.Axes, y_data: np.ndarray, ylabel: str, title: str
     ):
         steps = self.individual_logs["steps"][0]
         for i in range(self.y):
-            ax.plot(steps, y_data[i], label=f"Replica {i}")
+            ax.plot(steps, y_data[i], label=f"Layer {i}")
         ax.set_ylabel(ylabel)
         ax.set_xlabel("Step")
         ax.set_title(title)
         # ax.legend()
         ax.grid(True, linestyle="--", alpha=0.6)
+
+    def _plot_similarity_with_external_fields(self, ax: plt.Axes, right: bool):
+        logs = self.similarities_logger.get_logs()
+        steps = logs["steps"]
+        if right and "similarity_right_field" in logs:
+            for i in range(self.y):
+                ax.plot(
+                    steps,
+                    [s[i] for s in logs["similarity_right_field"]],
+                    label=f"Layer {i}",
+                )
+            ax.set_title("Similarity with Right Field vs. Step")
+        if not right and "similarity_left_field" in logs:
+            for i in range(self.y):
+                ax.plot(
+                    steps,
+                    [s[i] for s in logs["similarity_left_field"]],
+                    label=f"Layer {i}",
+                )
+            ax.set_title("Similarity with Left Field vs. Step")
+        ax.set_ylabel("Similarity")
+        ax.set_xlabel("Step")
+        ax.grid(True, linestyle="--", alpha=0.6)
+        ax.legend()
 
     def _plot_unsat_with_replicas_interaction(self, ax: plt.Axes):
         steps = self.similarities_logger.get_logs()["steps"]
@@ -64,7 +89,7 @@ class ReplicatedPlotter:
         ax.legend()
 
     def plot_all_metrics(self):
-        fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+        fig, axes = plt.subplots(2, 4, figsize=(20, 10))
         self._plot_unsat_with_replicas_interaction(axes[0, 0])
         self._plot_replicas_similarity(axes[0, 1])
         axes[0, 1].axhline(y=0.5, color="grey", linestyle="--", alpha=0.6)
@@ -93,13 +118,14 @@ class ReplicatedPlotter:
             "Magnetization",
             "Magnetization vs. Step",
         )
-        axes[1, 1].legend()
         self._plot_metric_individually(
             axes[1, 2],
             self.individual_logs["pseudo_energy"],
             "Pseudo-Energy",
             "Pseudo-Energy vs. Step",
         )
+        self._plot_similarity_with_external_fields(axes[0, 3], right=True)
+        self._plot_similarity_with_external_fields(axes[1, 3], right=False)
         plt.tight_layout()
         return fig
 

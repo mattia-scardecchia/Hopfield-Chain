@@ -7,7 +7,7 @@ from tqdm import tqdm
 from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,
-    binary_state_sampler,
+    binary_spin_state_sampler,
 )
 
 from ..network.logging import HopfieldLogger
@@ -94,7 +94,7 @@ def simulate_single_net(
     network = HopfieldNetwork(
         N=N,
         coupling_initializer=initializer,
-        state_initializer=binary_state_sampler,
+        state_initializer=binary_spin_state_sampler,
         J_D=J_D,
         rng=rng,
     )

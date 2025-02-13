@@ -1,2 +1,10 @@
 TODO:
-- explore learning
+- learn a single pattern-label pair with hebb. Is the label retrieved by conditioning on
+  the input and letting the label evolve? If not, can we tweak inference to make it happen?
+- are we able to learn more than one pattern?
+- perceptron rule?
+    - monitor 'symmetricity' of coupling matrix
+- structural changes:
+  - ferromagnetic component instead of self coupling
+  - 0-1 states and sparsity
+  

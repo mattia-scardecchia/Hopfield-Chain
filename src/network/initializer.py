@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 import numpy as np
 
@@ -82,8 +83,9 @@ class AsymmetricCoupling(CouplingInitializer):
         return J
 
 
-def binary_state_sampler(N: int, rng: np.random.Generator) -> np.ndarray:
+def binary_spin_state_sampler(N: int, rng: Optional[np.random.Generator]) -> np.ndarray:
     """
     Example sampler function returning random states in {+1, -1}.
     """
+    rng = rng if rng is not None else np.random.default_rng()
     return rng.choice([-1, 1], size=N)

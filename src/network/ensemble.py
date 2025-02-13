@@ -60,16 +60,6 @@ class HopfieldEnsemble:
 
         return total_field
 
-    def local_field_from_external_field_pov(
-        self, component_idx: int, right: bool = True
-    ) -> float:
-        """
-        For inference with a trained classifer. Compute the local field
-        from the perspective of the external field, as if it were neurons.
-        """
-        net_idx = self.y - 1 if right else 0
-        return self.h * self.networks[net_idx].state[component_idx]
-
     def num_unsatisfied_neurons_with_replicas_interaction(self) -> List[int]:
         nums = []
         for replica_idx, network in enumerate(self.networks):
@@ -112,6 +102,33 @@ class HopfieldEnsemble:
             + self.k * interaction_field
             + self.h * external_field,
         }
+
+    def local_field_from_external_field_pov(
+        self, component_idx: int, right: bool = True
+    ) -> float:
+        """
+        For inference with a trained classifer.
+        """
+        net_idx = self.y - 1 if right else 0
+        return self.h * self.networks[net_idx].state[component_idx]
+
+    def num_unsatisfied_external_field_components(self, right: bool = True) -> int:
+        """
+        For inference with a trained classifer.
+        """
+        field = self.right_field if right else self.left_field
+        num = 0
+        for component_idx in range(self.N):
+            h = self.local_field_from_external_field_pov(component_idx, right)
+            if np.sign(h) != field[component_idx]:
+                num += 1
+        return num
+
+    def external_field_is_stable(self, right: bool = True):
+        """
+        For inference with a trained classifer.
+        """
+        return self.num_unsatisfied_external_field_components(right) == 0
 
 
 def collect_field_breakdowns(ensemble: HopfieldEnsemble, n: int):

@@ -15,7 +15,7 @@ from src.network.ensemble import HopfieldEnsemble
 from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,
-    binary_state_sampler,
+    binary_spin_state_sampler,
 )
 from src.network.logging import HopfieldLogger
 from src.network.network import HopfieldNetwork
@@ -52,10 +52,13 @@ class ReplicatedHopfieldSimulation:
         local_field = self.ensemble.local_field(replica_idx, neuron_idx)
         self.networks[replica_idx].state[neuron_idx] = np.sign(local_field)
 
-    def relax(self, step: int, max_steps: int, rng: np.random.Generator, pbar):
-        converged = False
+    def relax(self, max_steps: int, rng: np.random.Generator, pbar=None, step: int = 0):
+        converged, pbar_is_none = False, pbar is None
         logging.info("Relaxing to fixed point...")
+        if pbar is None:
+            pbar = tqdm(total=(max_steps - step))
         self.log_step(step)  # log initial conditions
+
         while True:
             for replica_idx in range(self.y):
                 neuron_idx = rng.integers(self.N)
@@ -64,7 +67,6 @@ class ReplicatedHopfieldSimulation:
             pbar.update(1)
             if step % self.log_interval == 0:
                 self.log_step(step)
-
             if (
                 step % self.check_convergence_interval == 0
                 and self.ensemble.check_convergence()
@@ -76,6 +78,8 @@ class ReplicatedHopfieldSimulation:
 
         if step % self.log_interval != 0:
             self.log_step(step)
+        if pbar_is_none:
+            pbar.close()
         return step, converged
 
     def run_dynamics_with_callbacks(
@@ -88,7 +92,7 @@ class ReplicatedHopfieldSimulation:
             rng = np.random.default_rng()
 
         while True:
-            step, converged = self.relax(step, max_steps, rng, pbar)
+            step, converged = self.relax(max_steps, rng, pbar, step)
             if not converged:
                 assert step == max_steps, f"step: {step}, max_steps: {max_steps}"
                 break
@@ -130,7 +134,7 @@ def simulate_replicated_net(
         if symmetric
         else AsymmetricCoupling(mean=0.0, std=1.0)
     )
-    state_initializer = binary_state_sampler
+    state_initializer = binary_spin_state_sampler
     networks = [
         HopfieldNetwork(
             N=N,

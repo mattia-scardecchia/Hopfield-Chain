@@ -42,3 +42,10 @@ class HopfieldLogger:
         Returns logged data as a dictionary.
         """
         return dict(self.logs)
+
+    def flush(self) -> None:
+        """
+        Resets the logs.
+        """
+        self.logs = defaultdict(list)
+        self.logs["init_steps"] = [0]

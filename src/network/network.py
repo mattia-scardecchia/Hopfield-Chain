@@ -2,7 +2,7 @@ from typing import Optional
 
 import numpy as np
 
-from .initializer import CouplingInitializer, binary_state_sampler
+from .initializer import CouplingInitializer, binary_spin_state_sampler
 
 
 class HopfieldNetwork:
@@ -41,7 +41,7 @@ class HopfieldNetwork:
             self.J_D,
         )
         if state_initializer is None:
-            state_initializer = binary_state_sampler
+            state_initializer = binary_spin_state_sampler
         self.state_initializer = state_initializer
         self.initialize_state()
 

@@ -25,6 +25,14 @@ class EnsembleLogger:
         self.logs["unsat_with_replicas_interaction"].append(
             ensemble.num_unsatisfied_neurons_with_replicas_interaction()
         )
+        if ensemble.left_field is not None:
+            self.logs["similarity_left_field"].append(
+                [networks[i].state_similarity(ensemble.left_field) for i in range(y)]
+            )
+        if ensemble.right_field is not None:
+            self.logs["similarity_right_field"].append(
+                [networks[i].state_similarity(ensemble.right_field) for i in range(y)]
+            )
 
     # TODO: this should be handled by each single HopfieldLogger!!
     # They should track initial states and converged fixed points.
@@ -34,3 +42,6 @@ class EnsembleLogger:
 
     def get_logs(self) -> Dict:
         return dict(self.logs)
+
+    def flush(self) -> None:
+        self.logs = defaultdict(list)
