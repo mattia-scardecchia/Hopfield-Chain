@@ -235,6 +235,17 @@ def total_field_histograms(breakdowns: dict):
     return fig
 
 
+def plot_couplings_histogram(ensemble: HopfieldEnsemble):
+    fig, axes = plt.subplots(1, ensemble.y, figsize=(20, 5), sharey=True)
+    for i, ax in enumerate(axes):
+        ax.hist(ensemble.networks[i].J.flatten(), bins=30, color="skyblue", alpha=0.7)
+        ax.set_title(f"Layer {i}")
+        ax.grid(True, linestyle="--", alpha=0.6)
+    fig.suptitle("Couplings Histogram in each layer")
+    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    return fig
+
+
 def plot_replicated(ensemble: HopfieldEnsemble, output_dir: str):
     fig2 = plot_similarity_heatmap(ensemble)
     fig2_path = os.path.join(output_dir, "similarity_heatmap.png")
@@ -254,13 +265,7 @@ def plot_replicated(ensemble: HopfieldEnsemble, output_dir: str):
     plt.close(fig4)
     logging.info(f"Field breakdown saved to {fig4_path}")
 
-    fig, axes = plt.subplots(1, ensemble.y, figsize=(20, 5), sharey=True)
-    for i, ax in enumerate(axes):
-        ax.hist(ensemble.networks[i].J.flatten(), bins=30, color="skyblue", alpha=0.7)
-        ax.set_title(f"Layer {i}")
-        ax.grid(True, linestyle="--", alpha=0.6)
-    fig.suptitle("Couplings Histogram in each layer")
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig = plot_couplings_histogram(ensemble)
     fig_path = os.path.join(output_dir, "couplings_histogram.png")
     fig.savefig(fig_path)
     plt.close(fig)

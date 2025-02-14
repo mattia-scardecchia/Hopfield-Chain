@@ -27,7 +27,9 @@ class HopfieldEnsemble:
 
         self.chained = chained
         self.neighbors = [self._get_neighbors(i) for i in range(self.y)]
-        self.scale = 2 if chained else (self.y - 1)
+        self.scale = (
+            [1] + [2] * (self.y - 2) + [1] if chained else [self.y - 1] * self.y
+        )  # TODO: 1 or 2 for chain extrema?
 
         if not chained:
             assert left_field is None and right_field is None
@@ -51,7 +53,9 @@ class HopfieldEnsemble:
         interaction_field = sum(
             [self.networks[i].state[neuron_idx] for i in self.neighbors[replica_idx]]
         )
-        total_field = internal_field + self.k * interaction_field / self.scale
+        total_field = (
+            internal_field + self.k * interaction_field / self.scale[replica_idx]
+        )
 
         if replica_idx == 0 and self.left_field is not None:
             total_field += self.h * self.left_field[neuron_idx]
@@ -83,7 +87,7 @@ class HopfieldEnsemble:
                     for i in self.neighbors[replica_idx]
                 ]
             )
-            / self.scale
+            / self.scale[replica_idx]
         )
         external_field = 0.0
         if replica_idx == 0 and self.left_field is not None:

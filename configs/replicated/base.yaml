@@ -14,7 +14,7 @@ simulation:
   hebb:
     skip: false
     params:
-      lr: 0.0002
+      lr: 0.001
       max_steps: 10
       reinit: true
       seed: 0
