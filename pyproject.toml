@@ -2,3 +2,6 @@
 
 requires = ["setuptools >= 64"]
 build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
