@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -129,25 +129,31 @@ class ReplicatedPlotter:
         plt.tight_layout()
         return fig
 
-    def plot_fixed_points_similarity_heatmap(self):
+    def plot_fixed_points_similarity_heatmap(
+        self, layers: Optional[list] = None, with_flip_invariance: bool = False
+    ):
         """
         For each layer, plot the similarity between the fixed points logged in
         the EnsembleLogger as a heatmap.
         """
-        fig, axes = plt.subplots(1, self.y, figsize=(30, 10))
+        if layers is None:
+            layers = list(range(self.y))
+        fig, axes = plt.subplots(1, len(layers), figsize=(30, 10))
         logs = self.similarities_logger.get_logs()
-        for i, ax in enumerate(axes):
-            fixed_points = logs[f"fixed_point_{i}"]
+        for idx, ax in zip(layers, axes):
+            fixed_points = logs[f"fixed_point_{idx}"]
             T = len(fixed_points)
             sims = np.zeros((T, T))
             for t in range(T):
                 for s in range(T):
                     sims[t, s] = np.mean(fixed_points[t] == fixed_points[s])
+                    if with_flip_invariance:
+                        sims[t, s] = max(sims[t, s], 1 - sims[t, s])
             cax = ax.matshow(sims, cmap="seismic", vmin=0, vmax=1)
             fig.colorbar(cax, ax=ax)
             avg = (np.sum(sims) - np.trace(sims)) / (T**2 - T)
             ax.set_title(
-                f"Heatmap of Fixed Point Similarity in time - Layer {i}.\nOff-diagonal avg: {avg:.2f}."
+                f"Heatmap of Fixed Point Similarity in time - Layer {idx}.\nOff-diagonal avg: {avg:.2f}."
             )
             ax.set_xlabel("Step")
             ax.set_ylabel("Step")

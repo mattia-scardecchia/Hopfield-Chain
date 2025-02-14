@@ -43,5 +43,7 @@ class EnsembleLogger:
     def get_logs(self) -> Dict:
         return dict(self.logs)
 
-    def flush(self) -> None:
-        self.logs = defaultdict(list)
+    def flush(self, keep_fixed_points: bool = False) -> None:
+        for key in self.logs:
+            if not keep_fixed_points or "fixed_point" not in key:
+                self.logs[key] = []

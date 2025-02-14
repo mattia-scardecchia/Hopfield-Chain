@@ -13,7 +13,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
         h = self.ensemble.local_field_from_external_field_pov(component_idx, right=True)
         self.ensemble.right_field[component_idx] = np.sign(h)
 
-    def reset_state_and_loggers(self, rng=None):
+    def reset_state_and_loggers(self, rng=None, keep_fixed_points=False):
         """
         Re-initialize neuron states and loggers. Maintain the coupling matrix.
         """
@@ -22,7 +22,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
         init_state_callback(self.ensemble, self.loggers, 0)
         for logger in self.loggers:
             logger.flush()
-        self.ensemble_logger.flush()
+        self.ensemble_logger.flush(keep_fixed_points)
 
     def train_step_hebb(
         self,
@@ -32,6 +32,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
         max_steps: int,
         rng=None,
         reinit=False,
+        use_pbar=False,
     ):
         rng = rng if rng is not None else np.random.default_rng()
         hebb_callback = HebbianLearningCallback(
@@ -39,11 +40,17 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
         )
         self.ensemble.left_field = input.copy()
         self.ensemble.right_field = label.copy()
-        steps, converged = self.relax(max_steps, rng)
+        pbar = FakePBar() if not use_pbar else tqdm(total=max_steps)
+        steps, converged = self.relax(
+            max_steps,
+            rng,
+            pbar,
+        )
         if not converged:
             logging.warning("Relaxation did not converge. Learning step skipped.")
         else:
             hebb_callback(self.ensemble, self.loggers, steps)
+        return steps, converged
 
     def predict(
         self,
@@ -93,3 +100,11 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
             self.log_step(step)
         pbar.close()
         return self.ensemble.right_field, converged
+
+
+class FakePBar:
+    def update(self, n):
+        pass
+
+    def close(self):
+        pass
