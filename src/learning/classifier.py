@@ -4,8 +4,12 @@ import numpy as np
 from tqdm import tqdm
 
 from src.multi_net.callback import HebbianLearningCallback, InitStateCallback
+from src.multi_net.logging import EnsembleLogger
 from src.multi_net.simulation import ReplicatedHopfieldSimulation
+from src.network.ensemble import HopfieldEnsemble
 from src.network.initializer import binary_spin_state_sampler
+from src.network.logging import HopfieldLogger
+from src.network.network import HopfieldNetwork
 
 
 class HopfieldClassifier(ReplicatedHopfieldSimulation):
@@ -59,6 +63,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
         rng=None,
         label_step_interval: int = 1,
         initial_guess=None,
+        use_pbar: bool = False,
     ):
         """
         Accept an input. Use it as left external field. As 'right external field',
@@ -75,7 +80,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
         )
         step, converged = 0, False
         self.log_step(step)
-        pbar = tqdm(total=max_steps)
+        pbar = tqdm(total=max_steps) if use_pbar else FakePBar()
         while True:
             for replica_idx in range(self.y):
                 neuron_idx = rng.integers(self.N)
@@ -108,3 +113,40 @@ class FakePBar:
 
     def close(self):
         pass
+
+
+def initialize_classifier(
+    N,
+    coupling_initializer,
+    state_initializer,
+    J_D,
+    y,
+    k,
+    chained,
+    h,
+    log_interval,
+    check_convergence_interval,
+    rng,
+):
+    networks = [
+        HopfieldNetwork(
+            N=N,
+            coupling_initializer=coupling_initializer,
+            state_initializer=state_initializer,
+            J_D=J_D,
+            rng=rng,
+        )
+        for _ in range(y)
+    ]
+    loggers = [HopfieldLogger(reference_state=net.state) for net in networks]
+    similarities_logger = EnsembleLogger()
+    ensemble = HopfieldEnsemble(networks, k, chained, None, None, h=h)
+
+    model = HopfieldClassifier(
+        ensemble=ensemble,
+        loggers=loggers,
+        ensemble_logger=similarities_logger,
+        log_interval=log_interval,
+        check_convergence_interval=check_convergence_interval,
+    )
+    return model

@@ -1,5 +1,7 @@
 TODO:
-- setup a proper traning loop with a dataset of input-label pairs
+- predisponi un modo per salvare e riprodurre i risultati e plot interessanti
+  - inizia a scrivere in latex!
+- setup a proper traning loop with a dataset of input-label pairs in a script
   - enable as much logging as possible!
   - across different train/eval steps, handle:
     - internal state of loggers across train and eval steps
@@ -11,10 +13,21 @@ TODO:
     - accuracy on train set
     - length of relaxation in each step
     - (with few samples) similarity between fixed points obtained with same input-label pair
-- are we able to learn more than one pattern?
+- probabilmente, trova dei setting ragionevoli per una rete piu piccola per esperimenti in locale
+- capisci meglio cosa succede in inference:
+  - monitor similarity of guess with true label during relaxation
+  - look at similarity of internal representations between inference on an input and relaxation with same input and its actual label fixed
+- how many patterns can hebb learn?
 - perceptron rule?
     - monitor 'symmetricity' of coupling matrix (e.g. typical abs(J_ij - J_ji) vs typical abs(J_ij) )
+- simulation changes:
+  - neuron initializaton:
+    - always the same
+    - input (left field)
 - structural changes:
-  - ferromagnetic component instead of self coupling
+  - ferromagnetic component instead of self coupling:
+    - un numero O(N) di accoppiamenti positivi grandi e simmetrici
+    - una media c/sqrt(N) per J anziché 0?
+  - have a perceptron instead of a N-dimensional field as output
   - 0-1 states and sparsity
   

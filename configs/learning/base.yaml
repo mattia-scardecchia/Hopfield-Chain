@@ -1,0 +1,27 @@
+defaults:
+  - /../hydra@_here_
+  - _self_
+
+seed: 0
+name: prova
+
+network:
+  N: 300                    # number of neurons
+  share_J: false            # if true, replicas share J
+  chained: true             # if true, replicas interact in a chain
+  y: 5                      # number of replicas
+  k: 1.6                    # strength of coupling between replicas
+  h: 1.6                    # external field strength
+  couplings:
+    symmetric: false          # if true, J matrix is symmetric
+    J_D: 0.3                  # self-coupling strength
+
+simulation:
+  max_steps: 1000000
+  log_interval: 1000000
+  check_convergence_interval: 1000
+
+data:
+  P: 4  # number of patterns
+  C: 2  # number of classes
+  force_balanced: true
