@@ -25,13 +25,13 @@ class HebbianLearningCallback:
         max_steps: int,
         reinit: bool = False,
         state_initilizer=None,
-        seed: Optional[int] = None,
+        rng: Optional[np.random.Generator] = None,
     ):
         self.lr = lr
         self.max_steps = max_steps
         self.reinit = reinit
         self.state_initializer = state_initilizer
-        self.rng = np.random.default_rng(seed)
+        self.rng = rng if rng else np.random.default_rng()
         self.step = 0
 
         assert not (reinit and state_initilizer is None)

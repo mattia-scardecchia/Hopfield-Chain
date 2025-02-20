@@ -45,7 +45,7 @@ def eval_classifier(
             fixed_points[i].append(model.ensemble.networks[i].state.copy())
         preds.append(pred.copy())
 
-        model.reset_state_and_loggers()
+        model.reset_state_and_loggers(rng)
 
     return (
         converged_count,

@@ -40,7 +40,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
     ):
         rng = rng if rng is not None else np.random.default_rng()
         hebb_callback = HebbianLearningCallback(
-            lr=lr, max_steps=max_steps, reinit=reinit
+            lr=lr, max_steps=max_steps, reinit=reinit, rng=rng
         )
         self.ensemble.left_field = input.copy()
         self.ensemble.right_field = label.copy()

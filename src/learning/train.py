@@ -19,7 +19,7 @@ def hebbian_learning_epoch(
         steps.append(step)
         has_converged.append(converged)
         model.ensemble_logger.log_fixed_point(model.ensemble)
-        model.reset_state_and_loggers(keep_fixed_points=True)
+        model.reset_state_and_loggers(rng, keep_fixed_points=True)
 
     return steps, has_converged
 

@@ -30,7 +30,7 @@ def plot_stuff(model, save_dir, input, label, max_steps, rng):
     fig1_path = os.path.join(save_dir, "simulation_plot.png")
     fig1.savefig(fig1_path)
     plt.close(fig1)
-    model.reset_state_and_loggers()
+    model.reset_state_and_loggers(rng)
 
 
 @hydra.main(config_path="../configs/learning", config_name="hebb", version_base="1.3")
@@ -170,7 +170,7 @@ def main(cfg):
     plt.close(fig4)
 
     # eval at the end (fixed points similarity, 'accuracy')
-    t = 2
+    t = cfg.eval.t
     eval_inputs = [x for x in inputs for _ in range(t)]
     eval_labels = [x for x in labels for _ in range(t)]
     # eval_guesses = [np.sign(rng.standard_normal(N)).astype(int) for _ in range(t)] * P
@@ -188,6 +188,21 @@ def main(cfg):
         [avg_sim_by_pattern[idxs == c].mean() for c in range(C)]
     )
 
+    # change in average similarity with more samples (diagnostic)
+    fig = plt.figure(figsize=(10, 6))
+    avgs = similarity_to_target.reshape((P, t)).cumsum(axis=1) / np.arange(1, t + 1, 1)
+    for p in range(P):
+        plt.plot(avgs[p, :], label=f"pattern {p}")
+    plt.grid()
+    plt.legend()
+    plt.xlabel("number of independent trials")
+    plt.ylabel("average similarity to ground truth")
+    plt.title(
+        "Change in estimate of average similarity with ground truth with increasing number of trials, final eval"
+    )
+    fig.savefig(os.path.join(output_dir, "eval_avg_sim_vs_num_trials.png"))
+    plt.close(fig)
+
     np.set_printoptions(precision=3)
     logging.info(
         f"Average similarity with ground truth across {t} independent trials, for each individual input pattern"
@@ -203,7 +218,7 @@ def main(cfg):
     fig5_path = os.path.join(output_dir, "eval_fixed_points_similarity_heatmap.png")
     fig5.savefig(fig5_path)
     plt.close(fig5)
-    model.reset_state_and_loggers()  # avoid reading garbage by mistake
+    model.reset_state_and_loggers(rng)  # avoid reading garbage by mistake
 
 
 if __name__ == "__main__":
