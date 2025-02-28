@@ -11,7 +11,7 @@ def eval_classifier(
     model: HopfieldClassifier,
     inputs: list[np.ndarray],
     labels: list[np.ndarray],
-    idxs: list[int],  # targets[idxs[i]] == labels[i]
+    idxs: np.ndarray,  # targets[idxs[i]] == labels[i]
     targets: list[np.ndarray],  # all labels
     rng: np.random.Generator,
     max_steps: int,
