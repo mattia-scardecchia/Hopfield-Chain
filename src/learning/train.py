@@ -28,6 +28,7 @@ def hebbian_learning_loop(
     model: HopfieldClassifier,
     inputs: list[np.ndarray],
     labels: list[np.ndarray],
+    targets: list[np.ndarray],  # all labels
     lr: float,
     max_steps: int,
     rng: np.random.Generator,
@@ -35,8 +36,10 @@ def hebbian_learning_loop(
     eval_interval: int = 1,  # epochs
 ):
     similarity_to_target_eval = []  # epoch, pattern
+    avg_similarity_to_other_targets = []
     similarity_to_initial_guess_eval = []  # epoch, pattern
-    n_steps_for_convergence, eval_steps = [], []
+    corrects_eval = []  # epoch, pattern
+    n_steps_for_convergence, eval_epochs = [], []
 
     for epoch in range(epochs):
         steps, has_converged = hebbian_learning_epoch(
@@ -51,16 +54,26 @@ def hebbian_learning_loop(
                 similarity_to_initial_guess,
                 fixed_points,
                 preds,
-            ) = eval_classifier(model, inputs, labels, rng, max_steps)
+                corrects,
+                all_sims,
+            ) = eval_classifier(model, inputs, labels, targets, rng, max_steps)
             similarity_to_target_eval.append(similarity_to_target)
+            avg_similarity_to_other_targets.append(
+                (np.sum(all_sims, axis=1) - similarity_to_target) / (len(targets) - 1)
+            )
             similarity_to_initial_guess_eval.append(similarity_to_initial_guess)
-            eval_steps.append(epoch + 1)
+            corrects_eval.append(corrects)
+            eval_epochs.append(epoch + 1)
 
     similarity_to_target_eval = np.array(similarity_to_target_eval)
     similarity_to_initial_guess_eval = np.array(similarity_to_initial_guess_eval)
+    corrects_eval = np.array(corrects_eval)
+    avg_similarity_to_other_targets = np.array(avg_similarity_to_other_targets)
     return (
         n_steps_for_convergence,
-        eval_steps,
+        eval_epochs,
         similarity_to_target_eval,
         similarity_to_initial_guess_eval,
+        corrects_eval,
+        avg_similarity_to_other_targets,
     )

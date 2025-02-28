@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 
 from src.multi_net.callback import HebbianLearningCallback, InitStateCallback
-from src.multi_net.logging import EnsembleLogger
+from src.multi_net.logger import EnsembleLogger
 from src.multi_net.simulation import ReplicatedHopfieldSimulation
 from src.network.ensemble import HopfieldEnsemble
 from src.network.initializer import binary_spin_state_sampler

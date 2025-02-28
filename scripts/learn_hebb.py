@@ -84,13 +84,16 @@ def main(cfg):
 
     (
         n_steps_for_convergence,
-        eval_steps,
+        eval_epochs,
         similarity_to_target_eval,
         similarity_to_initial_guess_eval,
+        corrects_eval,
+        avg_sim_to_other_targets,
     ) = hebbian_learning_loop(
         model,
         inputs,
         labels,
+        targets,
         cfg.hebb.lr,
         cfg.simulation.max_steps,
         rng,
@@ -112,11 +115,19 @@ def main(cfg):
         model, final_plots_path, inputs[0], labels[0], cfg.simulation.max_steps, rng
     )
 
-    # eval performance during training, by pattern
+    # eval performance during training
     fig1, ax = plt.subplots(figsize=(10, 6))
     for p in range(P):
-        ax.plot(eval_steps, similarity_to_target_eval[:, p], label=f"pattern {p}")
-    ax.set_xlabel("Training steps")
+        ax.plot(
+            eval_epochs, similarity_to_target_eval[:, p], label=f"gt sim (pattern {p})"
+        )
+        ax.plot(
+            eval_epochs,
+            similarity_to_target_eval[:, p] - avg_sim_to_other_targets[:, p],
+            label=f"delta sim (pattern {p})",
+        )
+    ax.plot(eval_epochs, corrects_eval.mean(axis=1), label="accuracy")
+    ax.set_xlabel("Training epoch")
     ax.set_ylabel("Similarity to ground truth")
     ax.set_title("Similarity to ground truth target in eval throughout training")
     ax.grid()
@@ -128,11 +139,18 @@ def main(cfg):
     fig2, ax = plt.subplots(figsize=(10, 6))
     for c in range(C):
         ax.plot(
-            eval_steps,
+            eval_epochs,
             similarity_to_target_eval[:, idxs == c].mean(axis=1),
-            label=f"class {c}",
+            label=f"gt sim (class {c})",
         )
-    ax.set_xlabel("Training steps")
+        ax.plot(
+            eval_epochs,
+            similarity_to_target_eval[:, idxs == c].mean(axis=1)
+            - avg_sim_to_other_targets[:, idxs == c].mean(axis=1),
+            label=f"delta sim (class {c})",
+        )
+    ax.plot(eval_epochs, corrects_eval.mean(axis=1), label="accuracy")
+    ax.set_xlabel("Training epoch")
     ax.set_ylabel("Similarity to ground truth")
     ax.set_title("Similarity to ground truth target in eval throughout training")
     ax.grid()
@@ -157,7 +175,7 @@ def main(cfg):
     fig4, ax = plt.subplots(figsize=(10, 6))
     for c in range(C):
         ax.plot(
-            eval_steps,
+            eval_epochs,
             similarity_to_initial_guess_eval[:, idxs == c].mean(axis=1),
             label=f"class {c}",
         )
@@ -181,7 +199,11 @@ def main(cfg):
         similarity_to_initial_guess,
         fixed_points,
         preds,
-    ) = eval_classifier(model, eval_inputs, eval_labels, rng, cfg.simulation.max_steps)
+        corrects,
+        all_sims,
+    ) = eval_classifier(
+        model, eval_inputs, eval_labels, targets, rng, cfg.simulation.max_steps
+    )
     similarity_to_target = np.array(similarity_to_target)
     avg_sim_by_pattern = similarity_to_target.reshape((P, t)).mean(axis=1)
     avg_sim_by_class = np.array(
@@ -210,6 +232,10 @@ def main(cfg):
     logging.info(avg_sim_by_pattern)
     logging.info("Same as above, but aggregated by class")
     logging.info(avg_sim_by_class)
+    logging.info("For each pattern, similarity to all targets")
+    logging.info(all_sims)
+    logging.info("accuracy")
+    logging.info(np.mean(corrects))
 
     for i in range(model.y):
         model.ensemble_logger.logs[f"fixed_point_{i}"] = fixed_points[i]  # hack

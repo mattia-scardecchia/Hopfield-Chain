@@ -5,7 +5,7 @@ from typing import List, Optional
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.multi_net.logging import EnsembleLogger
+from src.multi_net.logger import EnsembleLogger
 from src.network.ensemble import HopfieldEnsemble, collect_field_breakdowns
 from src.network.logging import HopfieldLogger
 
@@ -241,11 +241,25 @@ def total_field_histograms(breakdowns: dict):
     return fig
 
 
+def antisymmetricity_level(J: np.ndarray):
+    """
+    normalized between -1 and 1. 1 means perfectly anti-symmetric, -1 means perfectly symmetric.
+    https://math.stackexchange.com/questions/2048817/metric-for-how-symmetric-a-matrix-is
+    """
+    sym_component = 0.5 * (J + J.T)
+    asym_component = 0.5 * (J - J.T)
+    sym_norm = np.linalg.norm(sym_component)
+    asym_norm = np.linalg.norm(asym_component)
+    return (asym_norm - sym_norm) / (sym_norm + asym_norm)
+
+
 def plot_couplings_histogram(ensemble: HopfieldEnsemble):
     fig, axes = plt.subplots(1, ensemble.y, figsize=(20, 5), sharey=True)
     for i, ax in enumerate(axes):
         ax.hist(ensemble.networks[i].J.flatten(), bins=30, color="skyblue", alpha=0.7)
-        ax.set_title(f"Layer {i}")
+        ax.set_title(
+            f"Layer {i}. Antisymmetry: {antisymmetricity_level(ensemble.networks[i].J):.4f}"
+        )
         ax.grid(True, linestyle="--", alpha=0.6)
     fig.suptitle("Couplings Histogram in each layer")
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
