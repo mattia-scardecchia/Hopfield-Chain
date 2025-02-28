@@ -3,7 +3,11 @@ import logging
 import numpy as np
 from tqdm import tqdm
 
-from src.multi_net.callback import HebbianLearningCallback, InitStateCallback
+from src.multi_net.callback import (
+    HebbianLearningCallback,
+    InitStateCallback,
+    PerceptronLearningCallback,
+)
 from src.multi_net.logger import EnsembleLogger
 from src.multi_net.simulation import ReplicatedHopfieldSimulation
 from src.network.ensemble import HopfieldEnsemble
@@ -28,20 +32,38 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
             logger.flush()
         self.ensemble_logger.flush(keep_fixed_points)
 
-    def train_step_hebb(
+    def train_step(
         self,
         input: np.ndarray,
         label: np.ndarray,
-        lr: float,
         max_steps: int,
+        learning_rule,
+        hyperparams,
         rng=None,
         reinit=False,
         use_pbar=False,
     ):
         rng = rng if rng is not None else np.random.default_rng()
-        hebb_callback = HebbianLearningCallback(
-            lr=lr, max_steps=max_steps, reinit=reinit, rng=rng
-        )
+
+        match learning_rule:
+            case "hebb":
+                learning_callback = HebbianLearningCallback(
+                    lr=hyperparams["lr"],
+                    max_steps=-1,
+                    reinit=reinit,
+                    rng=rng,
+                )
+            case "perceptron":
+                learning_callback = PerceptronLearningCallback(
+                    lr=hyperparams["lr"],
+                    k=hyperparams["k"],
+                    max_steps=-1,
+                    reinit=reinit,
+                    rng=rng,
+                )
+            case _:
+                raise ValueError(f"Unknown learning rule: {learning_rule}")
+
         self.ensemble.left_field = input.copy()
         self.ensemble.right_field = label.copy()
         pbar = FakePBar() if not use_pbar else tqdm(total=max_steps)
@@ -53,7 +75,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
         if not converged:
             logging.warning("Relaxation did not converge. Learning step skipped.")
         else:
-            hebb_callback(self.ensemble, self.loggers, steps)
+            learning_callback(self.ensemble, self.loggers, steps)
         return steps, converged
 
     def predict(

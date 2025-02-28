@@ -18,6 +18,39 @@ class AnnealKCallback:
         return self.anneal_k is not None
 
 
+class PerceptronLearningCallback:
+    def __init__(
+        self,
+        lr: float,
+        k: int,
+        max_steps: int,
+        reinit: bool = False,
+        state_initializer=None,
+        rng: Optional[np.random.Generator] = None,
+    ):
+        self.lr = lr
+        self.k = k
+        self.max_steps = max_steps
+        self.reinit = reinit
+        self.state_initializer = state_initializer
+        self.rng = rng if rng else np.random.default_rng()
+        self.step = 0
+
+    def __call__(
+        self, ensemble: HopfieldEnsemble, loggers: list[HopfieldLogger], step: int
+    ):
+        # TODO: implement learning step
+        if self.max_steps != -1 and self.step >= self.max_steps:
+            return True
+        if self.reinit:
+            for net, logger in zip(ensemble.networks, loggers):
+                net.state = self.state_initializer(net.N, self.rng)  # type: ignore
+                logger.reference_state = net.state.copy()
+                logger.logs["init_steps"].append(step)
+        self.step += 1
+        return False
+
+
 class HebbianLearningCallback:
     def __init__(
         self,
@@ -44,7 +77,7 @@ class HebbianLearningCallback:
         J[i, i] is not updated.
         If reinit is True, the state of all layers is reinitialized.
         """
-        if self.step >= self.max_steps:
+        if self.max_steps != -1 and self.step >= self.max_steps:
             return True
         for net in ensemble.networks:
             agreements = np.outer(net.state, net.state)

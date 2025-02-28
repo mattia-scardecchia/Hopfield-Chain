@@ -1,0 +1,21 @@
+defaults:
+  - /../hydra@_here_
+  - /data@_here_
+  - /network@_here_
+  - /hebb@_here_
+  - /perceptron@_here_
+  - _self_
+
+seed: 0
+name: prova
+
+simulation:
+  max_steps: 1000000
+  log_interval: 1000000
+  check_convergence_interval: 1000
+
+eval:
+  t: 5
+  eval_interval: 10
+
+learning_rule: hebb  # [hebb, perceptron]

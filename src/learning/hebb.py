@@ -4,18 +4,28 @@ from src.learning.classifier import HopfieldClassifier
 from src.learning.eval import eval_classifier
 
 
-def hebbian_learning_epoch(
+def learning_epoch(
     model: HopfieldClassifier,
     inputs: list[np.ndarray],
     labels: list[np.ndarray],
-    lr: float,
     max_steps: int,
     rng: np.random.Generator,
+    learning_rule: str,
+    hyperparams,
 ):
     steps, has_converged = [], []
 
     for input, label in zip(inputs, labels, strict=True):
-        step, converged = model.train_step_hebb(input, label, lr, max_steps, rng)
+        step, converged = model.train_step(
+            input,
+            label,
+            max_steps,
+            learning_rule,
+            hyperparams,
+            rng,
+            reinit=False,
+            use_pbar=False,
+        )
         steps.append(step)
         has_converged.append(converged)
         model.ensemble_logger.log_fixed_point(model.ensemble)
@@ -24,18 +34,19 @@ def hebbian_learning_epoch(
     return steps, has_converged
 
 
-def hebbian_learning_loop(
+def learning_loop(
     model: HopfieldClassifier,
     inputs: list[np.ndarray],
     labels: list[np.ndarray],
     idxs: np.ndarray,  # targets[idxs[i]] == labels[i]
     targets: list[np.ndarray],  # all labels
-    lr: float,
     max_steps: int,
     rng: np.random.Generator,
-    epochs: int,
+    learning_rule: str,
+    hyperparams,
     eval_interval: int = 1,  # epochs
 ):
+    epochs = hyperparams["epochs"]
     similarity_to_target_eval = []  # epoch, pattern
     avg_similarity_to_other_targets = []
     similarity_to_initial_guess_eval = []  # epoch, pattern
@@ -46,8 +57,14 @@ def hebbian_learning_loop(
         assert np.all(targets[idxs[i]] == labels[i])
 
     for epoch in range(epochs):
-        steps, has_converged = hebbian_learning_epoch(
-            model, inputs, labels, lr, max_steps, rng
+        steps, has_converged = learning_epoch(
+            model=model,
+            inputs=inputs,
+            labels=labels,
+            max_steps=max_steps,
+            rng=rng,
+            learning_rule=learning_rule,
+            hyperparams=hyperparams,
         )
         for i in range(len(inputs)):
             assert np.all(targets[idxs[i]] == labels[i])

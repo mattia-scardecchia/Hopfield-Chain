@@ -7,11 +7,11 @@ import numpy as np
 from hydra.core.hydra_config import HydraConfig
 
 from src.learning.classifier import initialize_classifier
+from src.learning.hebb import learning_loop
 from src.learning.plotting import (
     plot_classifier_after_training,
     plot_simulation_dynamics,
 )
-from src.learning.train import hebbian_learning_loop
 from src.network.initializer import (
     AsymmetricCoupling,
     SymmetricCoupling,
@@ -19,9 +19,16 @@ from src.network.initializer import (
 )
 
 
-@hydra.main(config_path="../configs/learning", config_name="hebb", version_base="1.3")
+@hydra.main(config_path="../configs/learning", config_name="config", version_base="1.3")
 def main(cfg):
     output_dir = HydraConfig.get().runtime.output_dir
+    match cfg.learning_rule:
+        case "hebb":
+            hyperparams = cfg.hebb
+        case "perceptron":
+            hyperparams = cfg.perceptron
+        case _:
+            raise ValueError(f"Unknown learning rule: {cfg.learning.learning_rule}")
 
     # ========= model initialization =========
     coupling_initializer = (
@@ -72,10 +79,18 @@ def main(cfg):
     initial_plots_path = os.path.join(output_dir, "initial")
     os.makedirs(initial_plots_path)
     plot_simulation_dynamics(
-        model, initial_plots_path, inputs[0], labels[0], cfg.simulation.max_steps, rng
+        model,
+        initial_plots_path,
+        inputs[0],
+        labels[0],
+        cfg.simulation.max_steps,
+        rng,
+        cfg.learning_rule,
+        hyperparams,
     )
 
-    # ========= training =========
+    # ========= training =================
+
     (
         n_steps_for_convergence,
         eval_epochs,
@@ -83,17 +98,17 @@ def main(cfg):
         similarity_to_initial_guess_eval,
         corrects_eval,
         avg_sim_to_other_targets,
-    ) = hebbian_learning_loop(
-        model,
-        inputs,
-        labels,
-        idxs,
-        targets,
-        cfg.hebb.lr,
-        cfg.simulation.max_steps,
-        rng,
-        cfg.hebb.epochs,
-        cfg.hebb.eval_interval,
+    ) = learning_loop(
+        model=model,
+        inputs=inputs,
+        labels=labels,
+        idxs=idxs,
+        targets=targets,
+        max_steps=cfg.simulation.max_steps,
+        rng=rng,
+        learning_rule=cfg.learning_rule,
+        hyperparams=hyperparams,
+        eval_interval=cfg.eval.eval_interval,
     )
 
     # ========= plotting and logging =========
@@ -115,6 +130,8 @@ def main(cfg):
         output_dir,
         cfg.eval.t,
         cfg.simulation.max_steps,
+        cfg.learning_rule,
+        hyperparams,
     )
 
 

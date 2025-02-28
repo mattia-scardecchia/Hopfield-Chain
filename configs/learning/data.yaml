@@ -1,0 +1,4 @@
+data:
+  P: 10  # number of patterns
+  C: 2  # number of classes
+  force_balanced: true

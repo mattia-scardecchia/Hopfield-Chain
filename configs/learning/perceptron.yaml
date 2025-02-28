@@ -1,0 +1,4 @@
+perceptron:
+  lr: 0.01    # step size (below threshold)
+  k: 0.6      # threshold on stability
+  epochs: 10

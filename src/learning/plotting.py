@@ -1,3 +1,4 @@
+import copy
 import logging
 import os
 from collections import defaultdict
@@ -5,14 +6,26 @@ from collections import defaultdict
 import numpy as np
 from matplotlib import pyplot as plt
 
+from src.learning.classifier import HopfieldClassifier
 from src.learning.eval import eval_classifier
 from src.multi_net.plotting import ReplicatedPlotter, plot_replicated
 
 
-def plot_simulation_dynamics(model, save_dir, input, label, max_steps, rng):
+def plot_simulation_dynamics(
+    model: HopfieldClassifier,
+    save_dir,
+    input,
+    label,
+    max_steps,
+    rng,
+    learning_rule,
+    hyperparams,
+):
     old_interval = model.log_interval
     model.log_interval = min(1000, old_interval)
-    model.train_step_hebb(input, label, 0.0, max_steps, rng)
+    hp = copy.deepcopy(hyperparams)
+    hp["lr"] = 0.0  # HACK
+    model.train_step(input, label, max_steps, learning_rule, hp, rng)
     model.log_interval = old_interval
 
     plot_replicated(model.ensemble, save_dir)
@@ -42,6 +55,8 @@ def plot_classifier_after_training(
     output_dir,
     t,
     max_steps,
+    learning_rule,
+    hyperparams,
 ):
     # fixed points
     plotter = ReplicatedPlotter(model.loggers, model.ensemble_logger)
@@ -54,7 +69,14 @@ def plot_classifier_after_training(
     final_plots_path = os.path.join(output_dir, "final")
     os.makedirs(final_plots_path)
     plot_simulation_dynamics(
-        model, final_plots_path, inputs[0], labels[0], max_steps, rng
+        model,
+        final_plots_path,
+        inputs[0],
+        labels[0],
+        max_steps,
+        rng,
+        learning_rule,
+        hyperparams,
     )
 
     # eval performance during training
