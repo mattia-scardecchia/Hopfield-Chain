@@ -11,6 +11,7 @@ def eval_classifier(
     model: HopfieldClassifier,
     inputs: list[np.ndarray],
     labels: list[np.ndarray],
+    idxs: list[int],  # targets[idxs[i]] == labels[i]
     targets: list[np.ndarray],  # all labels
     rng: np.random.Generator,
     max_steps: int,
@@ -23,14 +24,21 @@ def eval_classifier(
         initial_guesses = [
             np.sign(rng.standard_normal(N)).astype(int) for _ in range(len(inputs))
         ]
+
+    for i in range(len(inputs)):
+        assert np.all(targets[idxs[i]] == labels[i])
+
     converged_count = 0
     similarity_to_target, similarity_to_initial_guess = [], []
     fixed_points = defaultdict(list)
     corrects = []
     all_sims = []
-    preds = []
+    preds, class_preds = [], []
 
-    for input, label, guess in zip(inputs, labels, initial_guesses):
+    for input, label, idx, guess in zip(
+        inputs, labels, idxs, initial_guesses, strict=True
+    ):
+        assert np.all(targets[idx] == label)
         pred, converged = model.predict(
             input,
             max_steps,
@@ -39,22 +47,23 @@ def eval_classifier(
             initial_guess=guess,
         )
 
-        sims = []
-        for t in targets:
-            sim = (pred == t).sum() / N
-            sims.append(max(sim, 1 - sim))
-        sim = (pred == label).sum() / N
+        sims = [(pred == t).mean() for t in targets]
+        sims = [max(sim, 1 - sim) for sim in sims]
+        sim = (pred == label).mean()
         sim = max(sim, 1 - sim)
+        assert sim == sims[idx]
+
+        preds.append(pred.copy())
+        class_preds.append(np.argmax(sims))
+        assert (sim == max(sims)) == (np.argmax(sims) == idx)
+        all_sims.append(sims)
+        corrects.append((sim == max(sims)))
         similarity_to_target.append(sim)
-        similarity_to_initial_guess.append((pred == guess).sum() / N)
+        similarity_to_initial_guess.append((pred == guess).mean())
         if converged:
             converged_count += 1
-        corrects.append((sim == max(sims)))
-        all_sims.append(sims)
-
         for i in range(model.y):
             fixed_points[i].append(model.ensemble.networks[i].state.copy())
-        preds.append(pred.copy())
 
         model.reset_state_and_loggers(rng)
 
@@ -66,4 +75,5 @@ def eval_classifier(
         preds,
         corrects,
         np.array(all_sims),
+        class_preds,
     )

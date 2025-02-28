@@ -28,6 +28,7 @@ def hebbian_learning_loop(
     model: HopfieldClassifier,
     inputs: list[np.ndarray],
     labels: list[np.ndarray],
+    idxs: np.ndarray,  # targets[idxs[i]] == labels[i]
     targets: list[np.ndarray],  # all labels
     lr: float,
     max_steps: int,
@@ -41,10 +42,15 @@ def hebbian_learning_loop(
     corrects_eval = []  # epoch, pattern
     n_steps_for_convergence, eval_epochs = [], []
 
+    for i in range(len(inputs)):
+        assert np.all(targets[idxs[i]] == labels[i])
+
     for epoch in range(epochs):
         steps, has_converged = hebbian_learning_epoch(
             model, inputs, labels, lr, max_steps, rng
         )
+        for i in range(len(inputs)):
+            assert np.all(targets[idxs[i]] == labels[i])
         n_steps_for_convergence = n_steps_for_convergence + steps
 
         if (epoch + 1) % eval_interval == 0:
@@ -56,7 +62,8 @@ def hebbian_learning_loop(
                 preds,
                 corrects,
                 all_sims,
-            ) = eval_classifier(model, inputs, labels, targets, rng, max_steps)
+                class_preds,
+            ) = eval_classifier(model, inputs, labels, idxs, targets, rng, max_steps)
             similarity_to_target_eval.append(similarity_to_target)
             avg_similarity_to_other_targets.append(
                 (np.sum(all_sims, axis=1) - similarity_to_target) / (len(targets) - 1)
