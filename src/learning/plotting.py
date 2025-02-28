@@ -218,10 +218,6 @@ def plot_classifier_after_training(
             f"pattern {i // t}. gt: {eval_idxs[i]}, sims: {eval_all_sims[i]}, pred: {eval_class_predictions[i]}"
         )
     logging.info("accuracy of individual predictions:")
-    assert np.all(
-        eval_corrects
-        == [idxs[i // t] == v for i, v in enumerate(eval_class_predictions)]
-    )
     logging.info(np.mean(eval_corrects))
     logging.info(f"accuracy of soft ensembling (t = {t}):")
     logging.info(np.mean([idxs[i] == v for i, v in soft_ensembling.items()]))

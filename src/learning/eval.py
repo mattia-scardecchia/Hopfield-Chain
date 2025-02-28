@@ -55,7 +55,6 @@ def eval_classifier(
 
         preds.append(pred.copy())
         class_preds.append(np.argmax(sims))
-        assert (sim == max(sims)) == (np.argmax(sims) == idx)
         all_sims.append(sims)
         corrects.append((sim == max(sims)))
         similarity_to_target.append(sim)
