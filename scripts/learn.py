@@ -65,9 +65,8 @@ def main(cfg):
             num_samples = math.ceil(samples_left / (C - i))
             idxs = idxs + [i] * num_samples
             samples_left -= num_samples
-        rng.shuffle(
-            idxs
-        )  # TODO: should shuffle here, and rather choose order when plotting heatmap
+        if cfg.data.shuffle:
+            rng.shuffle(idxs)
         idxs = np.array(idxs)
     else:
         idxs = rng.integers(0, C, P)
@@ -109,6 +108,7 @@ def main(cfg):
         learning_rule=cfg.learning_rule,
         hyperparams=hyperparams,
         eval_interval=cfg.eval.eval_interval,
+        free_external_field=cfg.eval.free_external_field,
     )
 
     # ========= plotting and logging =========
@@ -132,6 +132,8 @@ def main(cfg):
         cfg.simulation.max_steps,
         cfg.learning_rule,
         hyperparams,
+        cfg.eval.cheat,
+        cfg.eval.free_external_field,
     )
 
 

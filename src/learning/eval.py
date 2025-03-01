@@ -15,8 +15,11 @@ def eval_classifier(
     targets: list[np.ndarray],  # all labels
     rng: np.random.Generator,
     max_steps: int,
-    initial_guesses: Optional[list[np.ndarray]] = None,
-    label_step_interval: int = 1,
+    free_external_field: bool = False,
+    initial_guesses: Optional[
+        list[np.ndarray]
+    ] = None,  # ignored if not free_external_field
+    label_step_interval: int = 1,  # ignored if not free_external_field
 ):
     model = copy.deepcopy(model)  # to avoid ruining loggers
     N = model.ensemble.N
@@ -39,13 +42,18 @@ def eval_classifier(
         inputs, labels, idxs, initial_guesses, strict=True
     ):
         assert np.all(targets[idx] == label)
-        pred, converged = model.predict(
-            input,
-            max_steps,
-            rng,
-            label_step_interval=label_step_interval,
-            initial_guess=guess,
-        )
+        if free_external_field:
+            pred, converged = model.predict_with_free_external_field(
+                input,
+                max_steps,
+                rng,
+                label_step_interval=label_step_interval,
+                initial_guess=guess,
+            )
+        else:
+            pred, converged = model.predict_without_external_field(
+                input, max_steps, rng
+            )
 
         sims = [(pred == t).mean() for t in targets]
         sims = [max(sim, 1 - sim) for sim in sims]
@@ -56,7 +64,9 @@ def eval_classifier(
         preds.append(pred.copy())
         class_preds.append(np.argmax(sims))
         all_sims.append(sims)
-        corrects.append((sim == max(sims)))
+        corrects.append(
+            (sim == np.max(sims)) and (np.count_nonzero(sims == np.max(sims)) == 1)
+        )
         similarity_to_target.append(sim)
         similarity_to_initial_guess.append((pred == guess).mean())
         if converged:

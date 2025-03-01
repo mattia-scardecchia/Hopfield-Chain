@@ -57,6 +57,7 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
                 learning_callback = PerceptronLearningCallback(
                     lr=hyperparams["lr"],
                     k=hyperparams["k"],
+                    suppress_right_field=hyperparams["suppress_right_field"],
                     max_steps=-1,
                     reinit=reinit,
                     rng=rng,
@@ -78,7 +79,26 @@ class HopfieldClassifier(ReplicatedHopfieldSimulation):
             learning_callback(self.ensemble, self.loggers, steps)
         return steps, converged
 
-    def predict(
+    def predict_without_external_field(
+        self,
+        left_field: np.ndarray,
+        max_steps: int,
+        rng=None,
+        use_pbar: bool = False,
+    ):
+        """
+        Relax the dyamics with the given left field and no right field.
+        Return the final state of the right-most layer as prediction.
+        """
+        rng = rng if rng is not None else np.random.default_rng()
+        self.ensemble.left_field = left_field.copy()
+        self.ensemble.right_field = None
+        pbar = tqdm(total=max_steps) if use_pbar else FakePBar()
+        steps, converged = self.relax(max_steps, rng, pbar)
+        pbar.close()
+        return self.ensemble.networks[-1].state, converged
+
+    def predict_with_free_external_field(
         self,
         left_field: np.ndarray,
         max_steps: int,

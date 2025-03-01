@@ -16,6 +16,8 @@ simulation:
 
 eval:
   t: 5
-  eval_interval: 10
+  eval_interval: 5
+  cheat: false
+  free_external_field: false
 
-learning_rule: hebb  # [hebb, perceptron]
+learning_rule: perceptron  # [hebb, perceptron]

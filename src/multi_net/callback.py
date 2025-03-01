@@ -23,6 +23,7 @@ class PerceptronLearningCallback:
         self,
         lr: float,
         k: int,
+        suppress_right_field: bool,
         max_steps: int,
         reinit: bool = False,
         state_initializer=None,
@@ -30,6 +31,7 @@ class PerceptronLearningCallback:
     ):
         self.lr = lr
         self.k = k
+        self.suppress_right_field = suppress_right_field
         self.max_steps = max_steps
         self.reinit = reinit
         self.state_initializer = state_initializer
@@ -42,6 +44,24 @@ class PerceptronLearningCallback:
         # TODO: implement learning step
         if self.max_steps != -1 and self.step >= self.max_steps:
             return True
+        for layer_idx in range(ensemble.y):
+            for neuron_idx in range(ensemble.N):
+                local_field = ensemble.local_field(layer_idx, neuron_idx)
+                right_field = ensemble.get_right_field(layer_idx, neuron_idx)
+                field_for_update = (
+                    local_field - right_field
+                    if self.suppress_right_field
+                    else local_field
+                )
+                if (
+                    field_for_update * ensemble.networks[layer_idx].state[neuron_idx]
+                    < self.k
+                ):
+                    ensemble.networks[layer_idx].J[neuron_idx, :] += (
+                        self.lr
+                        * ensemble.networks[layer_idx].state[neuron_idx]
+                        * ensemble.networks[layer_idx].state
+                    )
         if self.reinit:
             for net, logger in zip(ensemble.networks, loggers):
                 net.state = self.state_initializer(net.N, self.rng)  # type: ignore

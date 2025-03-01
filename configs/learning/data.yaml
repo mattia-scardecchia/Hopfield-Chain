@@ -2,3 +2,4 @@ data:
   P: 10  # number of patterns
   C: 2  # number of classes
   force_balanced: true
+  shuffle: false    # ignored if force_balanced is false (in that case, always shuffled)

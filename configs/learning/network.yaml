@@ -1,10 +1,10 @@
 network:
-  N: 300                    # number of neurons
+  N: 500                    # number of neurons
   share_J: false            # if true, replicas share J
   chained: true             # if true, replicas interact in a chain
   y: 5                      # number of replicas
-  k: 1.6                    # strength of coupling between replicas
-  h: 1.6                    # external field strength
+  k: 2.0                    # strength of coupling between replicas
+  h: 2.0                    # external field strength
   couplings:
     symmetric: false          # if true, J matrix is symmetric
     J_D: 0.3                  # self-coupling strength

@@ -45,6 +45,7 @@ def learning_loop(
     learning_rule: str,
     hyperparams,
     eval_interval: int = 1,  # epochs
+    free_external_field: bool = False,
 ):
     epochs = hyperparams["epochs"]
     similarity_to_target_eval = []  # epoch, pattern
@@ -80,7 +81,16 @@ def learning_loop(
                 corrects,
                 all_sims,
                 class_preds,
-            ) = eval_classifier(model, inputs, labels, idxs, targets, rng, max_steps)
+            ) = eval_classifier(
+                model,
+                inputs,
+                labels,
+                idxs,
+                targets,
+                rng,
+                max_steps,
+                free_external_field,
+            )
             similarity_to_target_eval.append(similarity_to_target)
             avg_similarity_to_other_targets.append(
                 (np.sum(all_sims, axis=1) - similarity_to_target) / (len(targets) - 1)

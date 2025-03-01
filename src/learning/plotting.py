@@ -57,6 +57,8 @@ def plot_classifier_after_training(
     max_steps,
     learning_rule,
     hyperparams,
+    eval_cheat,
+    free_external_field,
 ):
     # fixed points
     plotter = ReplicatedPlotter(model.loggers, model.ensemble_logger)
@@ -157,7 +159,7 @@ def plot_classifier_after_training(
     ]  # P blocks of t identical inputs
     eval_labels = [x for x in labels for _ in range(t)]
     eval_idxs = np.array([x for x in idxs for _ in range(t)])
-    # eval_guesses = [np.sign(rng.standard_normal(N)).astype(int) for _ in range(t)] * P
+    eval_guesses = copy.deepcopy(eval_labels) if eval_cheat else None
 
     (
         eval_converged_count,
@@ -176,6 +178,8 @@ def plot_classifier_after_training(
         targets,
         rng,
         max_steps,
+        free_external_field,
+        eval_guesses,
     )
     eval_similarity_to_target = np.array(eval_similarity_to_target)
     avg_sim_by_pattern = eval_similarity_to_target.reshape((P, t)).mean(axis=1)
@@ -226,15 +230,6 @@ def plot_classifier_after_training(
     for i in range(P):
         s += f"Pattern {i}. gt: {idxs[i]}. hard: {hard_ensembling[i]}. soft: {soft_ensembling[i]}\n"
     logging.info(s)
-
-    # logging.info("Soft ensembling")
-    # logging.info(soft_ensembling.values())
-    # logging.info("Hard ensembling")
-    # logging.info(hard_ensembling.values())
-    # s = "\n"
-    # for i, (pred, sims) in enumerate(zip(class_predictions, all_sims, strict=True)):
-    #     s += f"Pattern {i % P}. gt: {idxs[i % P]} pred: {pred}. all sims: {sims}\n"
-    # logging.info(s)
     for i in range(P * t):
         logging.info(
             f"pattern {i // t}. gt: {eval_idxs[i]}, sims: {eval_all_sims[i]}, pred: {eval_class_predictions[i]}"
@@ -247,7 +242,11 @@ def plot_classifier_after_training(
     logging.info(np.mean([idxs[i] == v for i, v in hard_ensembling.items()]))
 
     for i in range(model.y):
-        model.ensemble_logger.logs[f"fixed_point_{i}"] = eval_fixed_points[i]  # hack
+        # 0, t, 2t, ..., (P-1)t, 1, t+1, 2t+1, ..., (P-1)t+1, ..., t-1, t + t-1, ..., (P-1)t + t-1
+        ordering_of_fps = [j + k * t for j in range(t) for k in range(P)]
+        model.ensemble_logger.logs[f"fixed_point_{i}"] = [
+            eval_fixed_points[i][x] for x in ordering_of_fps
+        ]  # HACK
     plotter = ReplicatedPlotter(model.loggers, model.ensemble_logger)
     fig5 = plotter.plot_fixed_points_similarity_heatmap(with_flip_invariance=True)
     fig5_path = os.path.join(output_dir, "eval_fixed_points_similarity_heatmap.png")

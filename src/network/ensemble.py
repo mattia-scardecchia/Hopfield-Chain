@@ -48,21 +48,35 @@ class HopfieldEnsemble:
         else:
             return list(range(0, replica_idx)) + list(range(replica_idx + 1, self.y))
 
-    def local_field(self, replica_idx: int, neuron_idx: int) -> float:
-        internal_field = self.networks[replica_idx].local_field(neuron_idx)
+    def local_field(self, layer_idx: int, neuron_idx: int) -> float:
+        internal_field = self.networks[layer_idx].local_field(neuron_idx)
         interaction_field = sum(
-            [self.networks[i].state[neuron_idx] for i in self.neighbors[replica_idx]]
+            [self.networks[i].state[neuron_idx] for i in self.neighbors[layer_idx]]
         )
         total_field = (
-            internal_field + self.k * interaction_field / self.scale[replica_idx]
+            internal_field + self.k * interaction_field / self.scale[layer_idx]
         )
 
-        if replica_idx == 0 and self.left_field is not None:
+        if layer_idx == 0 and self.left_field is not None:
             total_field += self.h * self.left_field[neuron_idx]
-        if replica_idx == self.y - 1 and self.right_field is not None:
+        if layer_idx == self.y - 1 and self.right_field is not None:
             total_field += self.h * self.right_field[neuron_idx]
 
         return total_field
+
+    def get_right_field(self, layer_idx: int, neuron_idx: int) -> float:
+        """
+        returns the interaction field from the right (external field if last layer).
+        """
+        assert self.chained
+        assert self.right_field is not None
+        if layer_idx == self.y - 1:
+            return self.h * self.right_field[neuron_idx]
+        return (
+            self.k
+            * self.networks[layer_idx + 1].state[neuron_idx]
+            / self.scale[layer_idx]
+        )
 
     def num_unsatisfied_neurons_with_replicas_interaction(self) -> List[int]:
         nums = []
@@ -78,21 +92,16 @@ class HopfieldEnsemble:
     def check_convergence(self) -> bool:
         return self.num_unsatisfied_neurons_with_replicas_interaction() == [0] * self.y
 
-    def get_local_field_breakdown(self, replica_idx: int, neuron_idx: int) -> dict:
-        internal_field = self.networks[replica_idx].local_field(neuron_idx)
+    def get_local_field_breakdown(self, layer_idx: int, neuron_idx: int) -> dict:
+        internal_field = self.networks[layer_idx].local_field(neuron_idx)
         interaction_field = (
-            sum(
-                [
-                    self.networks[i].state[neuron_idx]
-                    for i in self.neighbors[replica_idx]
-                ]
-            )
-            / self.scale[replica_idx]
+            sum([self.networks[i].state[neuron_idx] for i in self.neighbors[layer_idx]])
+            / self.scale[layer_idx]
         )
         external_field = 0.0
-        if replica_idx == 0 and self.left_field is not None:
+        if layer_idx == 0 and self.left_field is not None:
             external_field = self.left_field[neuron_idx]
-        if replica_idx == self.y - 1 and self.right_field is not None:
+        if layer_idx == self.y - 1 and self.right_field is not None:
             external_field = self.right_field[neuron_idx]
 
         return {
